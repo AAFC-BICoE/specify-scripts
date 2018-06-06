@@ -1,5 +1,5 @@
 import pymysql as MySQLdb
-try:                       
+try:
     db = MySQLdb.connect("localhost",#username, #password,#specify database )
 except:
     print('MySQL connecting error')
