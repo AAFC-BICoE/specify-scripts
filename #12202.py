@@ -1,5 +1,6 @@
 import pymysql as MySQLdb
 from anytree import Node, RenderTree, AsciiStyle
+import xlwt
 
 try:
     # localhost   #username #password  #specify
@@ -14,7 +15,7 @@ rank400 = db.cursor()
 rank500 = db.cursor()
 check = db.cursor()
 
-rank200.execute('''SELECT ParentID, FullName, GeographyID FROM geography WHERE RankID = 200 ''')
+rank200.execute('''SELECT ParentID, FullName, GeographyID FROM geography WHERE RankID = 200 limit 10 ''')
 rank300.execute('''SELECT ParentID, FullName, GeographyID FROM geography WHERE RankID = 300 ''')
 rank400.execute('''SELECT ParentID, FullName, GeographyID FROM geography WHERE RankID = 400 ''')
 rank500.execute('''SELECT ParentID, FullName, GeographyID FROM geography WHERE RankID = 500 ''')
@@ -24,7 +25,18 @@ lvl3 = rank300.fetchall()
 lvl4 = rank400.fetchall()
 lvl5 = rank500.fetchall()
 
-text_file = open("12202Results.txt", "w")
+wb = xlwt.Workbook() #opening excel file for results to be written too
+ws = wb.add_sheet('12202 Results',cell_overwrite_ok= True)
+
+# Add headings with styling and froszen first row
+heading_xf = xlwt.easyxf('font: bold on; align: wrap on, vert centre, horiz center')
+headings = ['Country FullName', 'FullName','GeographyID 1', 'GeographyID 2']
+rowx = 0
+ws.set_panes_frozen(True) # frozen headings instead of split panes
+ws.set_horz_split_pos(rowx+1) # in general, freeze after last heading row
+ws.set_remove_splits(True) # if user does unfreeze, don't leave a split there
+for colx, value in enumerate(headings):
+    ws.write(rowx, colx, value, heading_xf)
 
 root = Node('root')
 
@@ -126,14 +138,23 @@ for country in lvl2:  # country node
                 # once reached here, the tree is built for the country
 
     if duplicatesTable != []:
-        text_file.write("Possible duplicates in: %s\n" % countryFullName)
+        resultData = []
         print('Possible duplicates In: ', countryFullName)
         for duplicate in duplicatesTable:
             duplicateName = duplicate[0]
             GID1 = duplicate[1]
             GID2 = duplicate[2]
-            text_file.write("FullName: %s GeographyIDs: %s , %s\n" % (duplicateName, GID1, GID2))
+
             print('FullName: ', duplicateName, 'GeographyIDs:', GID1, ',', GID2)
+            resultData.append((countryFullName,duplicateName, GID1, GID2))
+        for i, row in enumerate(resultData):
+            for j, col in enumerate(row):
+                ws.write(i+1, j, col)
+        v = [len(row[0]) for row in resultData]
+        ws.col(0).width = 256 * max(v) if v else 0
+
+wb.save('12202ResultsTEST.xls')
+
 
 ''' 
 #prints the tree created (for interest only)                                                                                                                                                                                                                        
@@ -143,5 +164,4 @@ for pre,fill, node in RenderTree(root):
 
 print('Complete')
 
-text_file.close()
 db.close()
