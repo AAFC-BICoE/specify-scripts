@@ -1,31 +1,24 @@
 import pymysql as MySQLdb
-try:
-    db = MySQLdb.connect("localhost",#username, #password,#specify database )
-except:
-    print('MySQL connecting error')
-    
-foreignKeyCheckOff = db.cursor()
-select = db.cursor()
-delete = db.cursor()
-foreignKeyCheckOn = db.cursor()
 
-try:
-    foreignKeyCheckOff.execute("""SET foreign_key_checks = 0""")
-    select.execute("""SELECT COUNT(*) FROM (SELECT L.LocalityName, L.LocalityID
-                   FROM locality L LEFT JOIN collectingevent C
-                   ON C.LocalityID = L.LocalityID WHERE C.LocalityID IS NULL) AS RecordsSelected""")
-    delete.execute("""DELETE L FROM locality L LEFT JOIN collectingevent C
-                      ON C.LocalityID = L.LocalityID WHERE C.LocalityID IS NULL""")
-    foreignKeyCheckOn.execute("""SET foreign_key_checks = 1""")
-    
-except:
-    print('Query error')
-    
-data = select.fetchall()
+db = MySQLdb.connect("localhost",#username, #password, #specify database name)
 
-if data[0][0] == 0:
-    print('No orphan records found')
-else:
-    print('Number of rows successfully deleted:' , data[0][0])
+fetchLocalityIDs = db.cursor()
+fetchLocalityIDKeys = db.cursor()
+removeReference = db.cursor()
+deleteLocality = db.cursor()
+
+fetchLocalityIDKeys.execute("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE CONSTRAINT_SCHEMA = 'specify' AND REFERENCED_COLUMN_NAME = 'LocalityID'") #selects all tables where the locaityID is a foreign key
+fetchLocalityIDs.execute("SELECT L.LocalityID FROM locality L LEFT JOIN collectingevent C ON C.LocalityID = L.LocalityID WHERE C.LocalityID IS NULL ") #selects all localityID's that are not attached to a record
+
+localityKey = fetchLocalityIDKeys.fetchall()
+localityID = fetchLocalityIDs.fetchall()
+
+for iD in localityID:
+    for tableName in localityKey:
+        removeReference.execute('UPDATE %s SET LocalityID = NULL WHERE LocalityID = %s' % (tableName[0],iD[0])) #sets any references to the orphan locality in the database to NULL
+        db.commit()
+
+    deleteLocality.execute('DELETE FROM locality WHERE LocalityID = %s' % (iD[0])) #deletes the orphan locality record
+    db.commit()
 
 db.close()
