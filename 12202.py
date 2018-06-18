@@ -2,7 +2,7 @@ import pymysql as MySQLdb
 from anytree import Node, RenderTree, AsciiStyle, PreOrderIter
 import xlwt
 import itertools
-# localhost   #username #password  #specify
+
 db = MySQLdb.connect("localhost", "brookec", "temppass", "specify")
 
 fetchRankIDs = db.cursor()
