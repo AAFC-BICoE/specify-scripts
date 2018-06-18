@@ -2,13 +2,13 @@ import pymysql as MySQLdb
 from anytree import Node, RenderTree, AsciiStyle, PreOrderIter
 import xlwt
 import itertools
-# localhost   #username #password  #specify
-db = MySQLdb.connect("localhost", "brookec", "temppass", "specify")
+
+db = MySQLdb.connect("localhost", #'username', #'password' , #'specifyDatabaseName')
 
 fetchRankIDs = db.cursor()
 recordsFromRank = db.cursor()
 
-fetchRankIDs.execute('SELECT DISTINCT RankID FROM taxon WHERE RankID >=140')
+fetchRankIDs.execute('SELECT DISTINCT RankID FROM taxon WHERE RankID >=140 ORDER BY RankID ASC ')
 rankIDs = fetchRankIDs.fetchall()
 
 def addnode(name, gid, pid, author,previousParent):  # creates new node and new treeDict key, sets parent to the node that was created before
@@ -22,7 +22,7 @@ resultData = []
 root = Node('root')
 
 for iD in rankIDs:  # selects all records with a certain rankID and puts them in a dictionary
-    recordsFromRank.execute('SELECT ParentID, FullName, TaxonID, Author FROM taxon WHERE RankID = %s', (iD[0]))
+    recordsFromRank.execute('SELECT ParentID, FullName, TaxonID, Author FROM taxon WHERE RankID = %s ', (iD[0]))
     recordsByRank[iD[0]] = recordsFromRank.fetchall()
 
 for r in recordsByRank:  # builds the taxon tree by searching for a relationship between an existing GID and new PID of each record of each level and connects where necessary
@@ -37,7 +37,6 @@ for family in recordsByRank[140]:  # searches each family 'subtree' for matching
     for name1, name2 in itertools.combinations(([node.name for node in PreOrderIter(treeDict[family[2]][2])]), 2):
         if ((name1[2] is not None and name1[2] != '') and (name2[2] is not None and name2[2] != '')) and (
                 name1[0] == name2[0]) and (name1[2][0] == name2[2][0]):
-            print('Duplicate Found:', name1[0], 'TID1:', name1[1], 'TID2:', name2[1], 'Author1:', name1[2], 'Author2:',name2[2])
             resultData.append((family[1], name1[0], name1[1], name1[2], name2[1], name2[2]))
 
 wb = xlwt.Workbook() # opening excel file for results to be written to
