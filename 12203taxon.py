@@ -2,14 +2,14 @@ import pymysql as MySQLdb
 from anytree import Node, RenderTree, AsciiStyle, PreOrderIter
 import xlwt
 import itertools
-import Levenshtein
+from Levenshtein import distance
 
-db = MySQLdb.connect("localhost",#username, #password, #specifyDatabaseName )
+db = MySQLdb.connect("localhost",#'username', #'password', #'specifyDatabaseName' )
 
 fetchRankIDs = db.cursor()
 recordsFromRank = db.cursor()
 
-fetchRankIDs.execute('SELECT DISTINCT RankID FROM taxon WHERE RankID >=140')
+fetchRankIDs.execute('SELECT DISTINCT RankID FROM taxon WHERE RankID >=140 ORDER BY RankID ASC')
 rankIDs = fetchRankIDs.fetchall()
 
 def addnode(name, gid, pid, author,previousParent):  # creates new node and new treeDict key, sets parent to the node that was created before
@@ -28,19 +28,19 @@ for iD in rankIDs:  # selects all records with a certain rankID and puts them in
 
 for r in recordsByRank: # builds the taxon tree by searching for a relationship between an existing GID and new PID of each record of each level and connects where necessary
     for record in recordsByRank[r]:
-        if record[0] not in treeDict:
-            a = addnode(record[1], record[2], record[0], record[3], root)
-        else:
-            b = treeDict[record[0]][2]
-            newNode = addnode(record[1], record[2], record[0], record[3], b)
+        if not (any(str.isdigit(c) for c in record[1])):  # removes any names that have numbers in them to avoid trivial typo flags
+            if record[0] not in treeDict:
+                a = addnode(record[1], record[2], record[0], record[3], root)
+            else:
+                b = treeDict[record[0]][2]
+                newNode = addnode(record[1], record[2], record[0], record[3], b)
 
 for family in recordsByRank[140]: # searches each family 'subtree' for matching names and matching first letter of author
     for name1, name2 in itertools.combinations(([node.name for node in PreOrderIter(treeDict[family[2]][2])]), 2):
-        if (((name1[2] is not None and name1[2] != '') and (name2[2] is not None and name2[2] != '')) and (name1[0] == name2[0]) and (name1[2][0] == name2[2][0])) \
+        if (((name1[2] is not None and name1[2] != '') and (name2[2] is not None and name2[2] != '')) and (name1[2][0] == name2[2][0])) \
                 or (name1[2] is None and name2[2] is None) or (name1[2] == '' and name2[2]==''):
-            LD = Levenshtein.ratio(name1[0], name2[0])
-            if 1 > LD >= 0.9:
-                print('Name 1', name1[0],'Name 2',name2[0], 'Levenshtein Distance', LD)
+            LD = distance(name1[0], name2[0])
+            if 0< LD <= 2:
                 resultData.append((family[1],name1[0], name2[0], name1[2], name2[2], name1[1], name2[1],LD))  # at this point the records are considered possible duplicates and are added to the duplicates table
 
 wb = xlwt.Workbook() # opening excel file for results to be written to
