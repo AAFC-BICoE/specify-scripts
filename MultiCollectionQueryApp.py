@@ -1,3 +1,9 @@
+"""
+Redmine Feature #6046
+Using library tkinter, creates a UI that user can search by catalog number, DAO accession number, collector lastname,
+taxon name, province and year collected across all collections that are in the schema. Once search results have been
+displayed, user can choose to save a copy of the result in an xls file.
+"""
 import pymysql as MySQLdb
 import xlwt
 from tkinter import *
@@ -16,50 +22,42 @@ headings = ["Catalog Number","DAO Accession Number","Collection","Collector Last
 counter=0
 
 # formats the raw data returned from the database search by filtering out duplicate records, counting records with
-# duplicate catalog numbers and handling records with multiple collectors and/or multiple names
+# duplicate catalog numbers and handling records with multiple collectors and/or multiple geography names
 def format_records(raw_data):
     raw_data_dict = {}
     key_data = []
     for record in raw_data:
-        if record[0] not in key_data: key_data.append(record[0])
         key = (record[0],record[4],record[2])
         if (key in raw_data_dict) and (record[3] not in raw_data_dict[key][3][0]) and (record[2]==raw_data_dict[key][2][0]):
             raw_data_dict[key][3][0] +=", " + str(record[3])
         else:
             raw_data_dict[key]=[[record[0]],[record[1]],[record[2]],[str(record[3])],[record[4]],[record[5]],[record[6]]]
+    for entry in raw_data_dict:
+        if entry[0] not in key_data: key_data.append(entry[0])
     return raw_data_dict,len(key_data)
 
-# selects all required information from the database using an identifying statement with the formatted
-#  user specified statement
-def fetch_info(statement):
-    fetchRecords.execute("SELECT CO.CatalogNumber,CO.AltCatalogNumber,CL.CollectionName,A.LastName,T.Fullname,"
-                         "G.FullName,YEAR(CE.StartDate) FROM collectionobject CO "
-                         "INNER JOIN collection CL ON CL.CollectionID=CO.CollectionID "
-                         "INNER JOIN collectingevent CE ON CE.CollectingEventID=CO.CollectingEventID "
-                         "INNER JOIN collector C ON C.CollectingEventID=CE.CollectingEventID "
-                         "INNER JOIN determination D ON D.CollectionObjectID=CO.CollectionObjectID "
-                         "INNER JOIN agent A ON A.AgentID=C.AgentID "
-                         "INNER JOIN taxon T ON T.TaxonID=D.TaxonID "
-                         "INNER JOIN locality L ON L.LocalityID=CE.LocalityID "
-                         "INNER JOIN geography G ON G.GeographyID=L.GeographyID "
-                         "WHERE %s" % statement)
-    print('here 5')
+# selects all required information from the database using an identifying statement with the formatted user specified fields
+def fetch_info(identifying_statement):
+    fetchRecords.execute("SELECT CO.CatalogNumber,CO.AltCatalogNumber,CL.CollectionName,A.LastName,T.Fullname,G.FullName,YEAR(CE.StartDate) FROM collectionobject CO "
+                        "INNER JOIN collection CL ON CL.CollectionID=CO.CollectionID "
+                        "INNER JOIN collectingevent CE ON CE.CollectingEventID=CO.CollectingEventID "
+                        "INNER JOIN collector C ON C.CollectingEventID=CE.CollectingEventID "
+                        "INNER JOIN determination D ON D.CollectionObjectID=CO.CollectionObjectID "
+                        "INNER JOIN agent A ON A.AgentID=C.AgentID "
+                        "INNER JOIN taxon T ON T.TaxonID=D.TaxonID "
+                        "INNER JOIN locality L ON L.LocalityID=CE.LocalityID "
+                        "INNER JOIN geography G ON G.GeographyID=L.GeographyID "
+                        "WHERE %s" % identifying_statement)
     return format_records(fetchRecords.fetchall())
 
-# configures conditions into a statement that MySQL is able to interpret
+# configures user input into a statement to search database
 def return_entry():
-
     input_list = [("CO.CatalogNumber LIKE'%s'",catalognum.get()),("CO.AltCatalogNumber LIKE'%s'",dao.get()),
                   ("A.LastName LIKE '%s%s%s'",('%',lastname.get(),'%')),("T.FullName LIKE'%s'",geography.get()),
                   ("YEAR(CE.StartDate) LIKE '%s'",year.get()),("G.FullName LIKE '%s%s%s'",('%',province.get(),'%'))]
-    #statement_list = []
+    statement_list = []
     for field in input_list:
-        print(input_list)
-        print(field)
-        statement_list = [(field[0] % field[1] + "AND ") if "" not in field else None]
-
-        #if field[1] != "": statement_list.append(field[0] % field[1] + "AND ")
-    print(("".join(statement_list))[:-4])
+        if field[1] != "": statement_list.append(field[0] % field[1] + "AND ")
     return fetch_info(("".join(statement_list))[:-4])
 
 # saves the search results to a .xls file named by the user
@@ -78,7 +76,7 @@ def save_to_file(records):
             for j,col2 in enumerate(records[row2]): ws.write(i+1,j,col2[0])
         wb.save("%s.xls" % name)
 
-# configures the display of the results of each query
+# configures the display of the results of each search
 def configure_results(records,tab_frame):
         global counter
         counter+=1
@@ -100,7 +98,7 @@ def configure_results(records,tab_frame):
         Button(frame,text='Close Tab', command= lambda: tab_frame.destroy()).grid(column=3,row=0)
         return frame
 
-# displays the results of each query to a new tab inside the original window
+# displays the results of each search to a new tab inside the initial window
 def display_results(tab_frame):
     records = return_entry()
     if records[1] != 0:

@@ -1,4 +1,5 @@
 """
+Redmine Support #5722
 Given 2 GUID's pointing to a bad agent and good agent in the schema, the specified 'Bad Agent' is deleted from
 the schema by changing all references of it to the specified 'Good Agent'.
 """
