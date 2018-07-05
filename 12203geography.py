@@ -1,4 +1,5 @@
 """
+Redmine Support #12203
 Creates an xls report of possible typos within the geography tree. First builds a tree by rank using the library
 'anytree' and excludes any geography full names with numbers in them to avoid any trivial typos (ie. 'Zone 1' vs 'Zone 2')
 Then searches through each country subtree, if two names have a levenshtein distance of 1 then they are flagged as
