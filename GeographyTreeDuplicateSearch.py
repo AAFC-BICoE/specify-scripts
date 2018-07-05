@@ -1,4 +1,5 @@
 """
+Redmine Support #12202
 Creates an xls report of duplicate geography names within a country. First creates a tree using geography ranks using
 library 'anytree' then iterates through each country subtree and compares each name with each other, if two geography
 full names are a match then they are considered a duplicate and are added to the report.

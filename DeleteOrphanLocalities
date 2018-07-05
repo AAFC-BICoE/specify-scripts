@@ -1,4 +1,5 @@
 """
+Redmine Support #12199.py
 Deletes localities that are not attached to any collectionobject by selecting the orphan localityID's then updating any
 references of the localityID in the schema to NULL, then deleting locality from schema.
 """

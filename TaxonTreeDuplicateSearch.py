@@ -1,4 +1,5 @@
 """
+Redmine Support #12204
 Creates an xls report of duplicate taxon names within the taxonomy tree that are part of the same family and have the
 same first character of author. First builds the taxon tree using library 'anytree', then iterates through each family
 subtree and creates a dictionary with keys as the taxon fullname and first letter of author, and the values as the
