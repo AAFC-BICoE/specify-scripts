@@ -1,4 +1,5 @@
 """
+Redmine Support #12464
 Creates an xls report of possible locality name typos within a country. Selects possible typos by first
 building a tree using library 'anytree', then iterates each node within a country subtree and takes the Levenshtein
 distance for every comparison, locality names with a Levenshtein distance of 2 or less are flagged as a possible

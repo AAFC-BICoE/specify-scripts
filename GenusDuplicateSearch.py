@@ -1,4 +1,5 @@
 """
+Redmine Support #12463
 Creates an xls report of duplicate full genus names that are in the same genus and have the same first character of author.
 First creates a tree of taxon ranks using the library 'anytree', then iterates through each genus subtree and creates
 a dictionary with keys as the genus name and first letter of author, and the values as the taxonID. Then searches

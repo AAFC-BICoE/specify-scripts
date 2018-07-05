@@ -1,4 +1,5 @@
 """
+Redmine Support #12464
 Creates an xls report of duplicate locality names within a country. Selects duplicate names by first building a tree
 using the library 'anytree', then iterates each node within a country subtree and creates a dictionary with locality
 names as keys and loclaityID's as values. Once dictionary is complete, iterates back over and counts number of IDs that
