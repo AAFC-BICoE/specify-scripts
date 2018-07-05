@@ -1,4 +1,5 @@
 """
+Redmine Support #12201
 Using the library 'tkinter', creates a UI that allows user to merge two collections together. User can choose to merge
 one whole collection, or specify fields on the catalog numbers to merge only part of the collection. When a merge is
 performed, script checks to make sure there are no conflicting catalog numbers, then switches any reference of the
