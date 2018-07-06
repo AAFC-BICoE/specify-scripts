@@ -54,13 +54,13 @@ for r in recordsByRank:
 # searches each family 'subtree' for matching names and matching first letter of author
 for family in recordsByRank[140]:
     for name1, name2 in itertools.combinations(([node.name for node in PreOrderIter(treeDict[family[2]][2])]), 2):
-        if (name1[2] is not None and name1[2] != "") and (name2[2] is not None and name2[2] != ""): #actual characters
+        if (name1[2] is not None and name1[2] != "") and (name2[2] is not None and name2[2] != ""):
             if name1[2][0] == '(' or name1[2][0] == '[': LD = (check_author(name1[2][1],name1[0],name2[2][0],name2[0]))
             elif name2[2][0] == '(' or name2[2][0] == '[': LD = check_author(name1[2][0], name1[0], name2[2][1], name2[0])
             else: LD =check_author(name1[2][0], name1[0], name2[2][0], name2[0])
             if 0 < LD <= 2:
                 resultData.append((family[1], name1[0], name2[0], name1[2], name2[2], name1[1],name2[1], LD))
-        elif (name1[2] is None and name2[2] is None) or (name1[2]== "" and name2[2]==""): #none
+        elif (name1[2] is None and name2[2] is None) or (name1[2]== "" and name2[2]==""):
             LD = check_author(name1[2], name1[0], name2[2], name2[0])
             if 0 < LD <= 2:
                 resultData.append((family[1], name1[0], name2[0], name1[2], name2[2], name1[1],name2[1], LD))
