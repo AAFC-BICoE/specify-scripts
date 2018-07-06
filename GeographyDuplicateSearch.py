@@ -14,7 +14,7 @@ db = MySQLdb.connect("localhost", '''"MySQLusername", "MySQLpassword", "MySQLdat
 fetchRankIDs = db.cursor()
 recordsFromRank = db.cursor()
 
-fetchRankIDs.execute("SELECT DISTINCT RankID FROM geography WHERE RankID >=200")
+fetchRankIDs.execute("SELECT DISTINCT RankID FROM geography WHERE RankID >=200 ORDER BY RankID ASC")
 rankIDs = fetchRankIDs.fetchall()
 
 treeDict = {}
@@ -30,11 +30,10 @@ def add_node(name, gid, pid, previous_parent):
 
 # selects all records with a certain rankID and puts them in a dictionary
 for iD in rankIDs:
-    recordsFromRank.execute("SELECT ParentID, FullName, GeographyID FROM geography WHERE RankID = %s ", (iD[0]))
+    recordsFromRank.execute("SELECT ParentID, FullName, GeographyID FROM geography WHERE RankID = %s", (iD[0]))
     recordsByRank[iD[0]] = recordsFromRank.fetchall()
 
-# builds the geography tree by searching for a relationship between an existing GID and new PID of each
-# record of each level and connects where necessary
+# builds the geography tree by searching for a relationship between ParentID's and GeographyID's
 for r in recordsByRank:
     for record in recordsByRank[r]:
         if record[0] not in treeDict:
@@ -45,15 +44,19 @@ for r in recordsByRank:
 
 # searches each country 'subtree' for matching names
 for country in recordsByRank[200]:
-    for name1, name2 in itertools.combinations(([node.name for node in PreOrderIter((treeDict[country[2]][2]))]), 2):
-        if name1[0] == name2[0]:
-            resultData.append((country[1], name1[0], name1[1], name2[1]))
+    country_dict = {}
+    for name in [node.name for node in PreOrderIter((treeDict[country[2]][2]))]:
+        if name[0] in country_dict: country_dict[name[0]].append(name[1])
+        else: country_dict[name[0]] = [name[1]]
+    for key in country_dict:
+        if len(country_dict[key]) > 1:
+            resultData.append((country[1],key,str(country_dict[key])))
 
 # writes the results of the search to an xls file named '12202Report'
 wb = xlwt.Workbook()
-ws = wb.add_sheet("12202 Results")
+ws = wb.add_sheet("Geography Duplicate Results")
 heading_xf = xlwt.easyxf("font: bold on; align: wrap on, vert centre, horiz center")
-headings = ["Country FullName", "Duplicate FullName", "GeographyID 1", "GeographyID 2"]
+headings = ["Country FullName", "Duplicate FullName", "GeographyIDs"]
 rowx = 0
 ws.set_panes_frozen(True)
 ws.set_horz_split_pos(rowx + 1)
@@ -65,5 +68,5 @@ for i, row in enumerate(resultData):
         ws.write(i + 1, j, col)
 v = [len(row[0]) for row in resultData]
 ws.col(0).width = 256 * max(v) if v else 0
-wb.save("12202Report.xls")
+wb.save("GeographyDuplicateReport.xls")
 db.close()
