@@ -5,7 +5,7 @@ one whole collection, or specify fields on the catalog numbers to merge only par
 performed, script checks to make sure there are no conflicting catalog numbers, then switches any reference of the
 collection that is being merged to the collection that it is being merged too. If a complete collection is being
 merged then the collection is deleted after all switches have been made. If any conflicting catalog numbers are found
-they hare displayed and user has option to save report to an xls file.
+they are displayed and user has option to save report to an xls file.
 """
 import pymysql as MySQLdb
 import xlwt
@@ -16,7 +16,7 @@ from tkinter.simpledialog import askstring
 from tkinter.messagebox import showinfo
 import tkinter as tk
 
-db = MySQLdb.connect("localhost", "brookec", "temppass", "specifyTEST")
+db = MySQLdb.connect("localhost", '''"MySQLusername", "MySQLpassword", "MySQLdatabaseName"''')
 
 checkConflicts = db.cursor()
 removeReferences = db.cursor()
@@ -43,7 +43,7 @@ def create_entry_box(search, row, col, text):
     name.grid(column=col + 1, row=row, sticky=W)
     return name
 
-# selects any catalog numbers that two collections shares that would create conflicts
+# selects any catalog numbers that two collections share that would create conflicts
 def check_conflict(option):
     checkConflicts.execute("SELECT B.CatalogNumber,B.CollectionObjectID,A.CollectionObjectID FROM collectionobject B "
                            "INNER JOIN collectionobject A ON A.CatalogNumber=B.CatalogNumber WHERE %s" % option)
@@ -55,7 +55,7 @@ def fetch_records(option):
                           "WHERE A.collectionID = %s %s" % (c1.get(), option))
     return selectRecords.fetchall()
 
-# removes any references of a collection by updating tables that reference a collection identifier
+# removes any references of a collection by updating tables that reference collections by column name or foreign key
 def remove_references(schema, option1, constraint, option2):
     removeReferences.execute("SELECT DISTINCT(T1.TABLE_NAME),T1.COLUMN_NAME FROM INFORMATION_SCHEMA.%s T1 %s WHERE "
                              "%s IN ('CollectionID','CollectionMemberID','UserGroupScopeID') "
