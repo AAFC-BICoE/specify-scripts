@@ -1,11 +1,11 @@
 """
 Redmine Support #12201
-Using the library 'tkinter', creates a UI that allows user to merge two collections together. User can choose to merge
-one whole collection, or specify fields on the catalog numbers to merge only part of the collection. When a merge is
-performed, script checks to make sure there are no conflicting catalog numbers, then switches any reference of the
-collection that is being merged to the collection that it is being merged too. If a complete collection is being
-merged then the collection is deleted after all switches have been made. If any conflicting catalog numbers are found
-they are displayed and user has option to save report to an xls file.
+Using the library 'tkinter', creates a UI that is able to merge two collections together. User can choose to merge
+one whole collection, or specify catalog numbers to merge only part of the collection. When a merge is performed,
+script checks to make sure there are no conflicting catalog numbers, then switches any reference of the collection that
+is being merged to the collection that it is being merged too. If an entire collection is being merged then, empty
+collection is deleted after all switches have been made. If any conflicting catalog numbers are found they are
+displayed and user has option to save report of conflicts to an xls file.
 """
 import pymysql as MySQLdb
 import xlwt
@@ -19,7 +19,7 @@ import tkinter as tk
 db = MySQLdb.connect("localhost", '''"MySQLusername", "MySQLpassword", "MySQLdatabaseName"''')
 
 checkConflicts = db.cursor()
-removeReferences = db.cursor()
+switchRef = db.cursor()
 updateCollection = db.cursor()
 delete = db.cursor()
 collectionDict = db.cursor()
@@ -49,39 +49,36 @@ def check_conflict(option):
                            "INNER JOIN collectionobject A ON A.CatalogNumber=B.CatalogNumber WHERE %s" % option)
     return checkConflicts.fetchall()
 
-# selects records from collection that is being merged with any user specified fields the catalog numbers may have
+# selects records from collection that is being merged with any conditions the catalog numbers may have
 def fetch_records(option):
     selectRecords.execute("SELECT A.CatalogNumber,A.CollectionObjectID,A.CollectionID FROM collectionobject A "
                           "WHERE A.collectionID = %s %s" % (c1.get(), option))
     return selectRecords.fetchall()
 
-# removes any references of a collection by updating tables that reference collections by column name or foreign key
+# switches any references of a collection by updating tables that reference collections by column name or foreign key
 def remove_references(schema, option1, constraint, option2):
-    removeReferences.execute("SELECT DISTINCT(T1.TABLE_NAME),T1.COLUMN_NAME FROM INFORMATION_SCHEMA.%s T1 %s WHERE "
-                             "%s IN ('CollectionID','CollectionMemberID','UserGroupScopeID') "
-                             "AND T1.TABLE_NAME != 'collection'" % (schema, option1, constraint))
-    for table in removeReferences.fetchall():
+    switchRef.execute("SELECT DISTINCT(T1.TABLE_NAME),T1.COLUMN_NAME FROM INFORMATION_SCHEMA.%s T1 %s WHERE %s IN "
+                      "('CollectionID','CollectionMemberID','UserGroupScopeID') AND T1.TABLE_NAME != 'collection'"
+                      % (schema, option1, constraint))
+    for table in switchRef.fetchall():
         updateCollection.execute("UPDATE %s A SET A.%s=%s WHERE A.%s=%s %s"
-                                 %(table[0], table[1], c2.get(), table[1], c1.get(), option2))
-        db.commit()
+                           %(table[0], table[1], c2.get(), table[1], c1.get(), option2))
+        #db.commit()
 
-# merges all of one collection to another by first checking for any possible conflicts, then feeding necessary
-# information into functions to switch all references of old collection to merged one
+# checks for possible catalog number conflicts, calls on necessary functions to merges all of one collection into another
 def merge_all(tab_frame):
     conflict = check_conflict("A.CollectionID = %s AND B.CollectionID = %s" % (c1.get(), c2.get()))
     if len(conflict) == 0:
         remove_references("COLUMNS", "", "T1.COLUMN_NAME", "")
         remove_references("KEY_COLUMN_USAGE", "", "CONSTRAINT_SCHEMA='specify' AND REFERENCED_COLUMN_NAME", "")
         delete.execute("DELETE FROM collection WHERE collectionID=%s" % c1.get())
-        db.commit()
-        messagebox.showinfo("Merge Successful", "Merge was successful")
-        return
+        #db.commit()
+        return messagebox.showinfo("Merge Successful", "Merge was successful")
     if messagebox.askyesnocancel("Error", "%s conflicts found in merge of %s into %s.\nShow conflicts?"
                                           % (len(conflict), coll_dict[c1.get()], coll_dict[c2.get()])):
         display_data(conflict, tab_frame, "Conflict Results", True, "")
 
-# merges specified records from one collection to another by passing necessary information into functions to switch
-# references of old collection to merged one for user selected catalog numbers
+# calls on necessary function to merge specified records from one collection to another
 def merge_some(statement):
     remove_references("COLUMNS", "INNER JOIN INFORMATION_SCHEMA.COLUMNS T2 ON T2.TABLE_NAME = T1.TABLE_NAME",
                       "T2.COLUMN_NAME LIKE 'CatalogNumber' AND T1.COLUMN_NAME", ("AND %s" % statement))
@@ -90,15 +87,12 @@ def merge_some(statement):
                        ("AND %s" % statement))
     messagebox.showinfo("Merge Successful", "Merge was successful")
 
-# formats user selected fields in order for query to be fed into necessary functions and displays popup window giving
-# user option to merge records or display the records first
+# formats user selected fields for query to be used, displays popup window giving option to display or merge records
 def format_merge(tab_frame):
     input_list = [("CatalogNumber BETWEEN '%s'AND'%s'", (cat_range1.get(), cat_range2.get())),
                   ("CatalogNumber LIKE '%s%s'", (cat_start.get(), '%')),
                   ("CatalogNumber LIKE '%s%s'", ('%', cat_end.get()))]
-    statement_list = []
-    for field in input_list:
-        if "" not in field[1]: statement_list.append(field[0] % field[1] + "AND A.")
+    statement_list = list(field[0] % field[1] + "AND A." for field in input_list if "" not in field[1])
     statement = ("".join(statement_list))[:-6]
     data = fetch_records("AND A.%s" % statement)
     conflict = check_conflict("A.CollectionID = %s AND B.CollectionID = %s AND A.%s"% (c1.get(), c2.get(), statement))
@@ -110,7 +104,7 @@ def format_merge(tab_frame):
                           %(len(data), coll_dict[c1.get()], coll_dict[c2.get()]), font="bold").pack()
         Button(popup, text="Yes", command=lambda: merge_some(statement) or popup.destroy()).pack()
         Button(popup, text="Display %s records to be merged"% len(data),command=lambda:
-                            display_data(data,tab_frame,"Records To Be Merged",False,statement) or popup.destroy()).pack()
+                        display_data(data,tab_frame,"Records To Be Merged",False,statement) or popup.destroy()).pack()
         Button(popup, text="Close", command=lambda: popup.destroy()).pack()
     elif len(data) == 0:
         messagebox.showinfo("Specify Collections Merge", "No records found")
@@ -169,16 +163,14 @@ def configure_data_display(data_list, tab_frame, tab_name, heading, toggle, stat
     Button(frame, text="Merge Records", command=lambda: merge_some(statement)).grid(column=2, row=0)
     return frame
 
-# displays data in a table with headings depending on what the toggle is
+# displays data in a table with headings and data depending on what the user is displaying (conflicts or merge)
 def display_data(data, tab_frame, tab_name, toggle, statement):
-    data_list = []
-    for record in data:
-        if toggle:
-            heading = ["CatalogNumber","CollectionObjectID 1","Collection Name","CollectionObjectID 2","Collection Name"]
-            data_list.append((record[0], record[1], coll_dict[c1.get()], record[2], coll_dict[c2.get()]))
-        else:
-            heading = ["CatalogNumber", "CollectionObjectID", "Collection Name"]
-            data_list.append((record[0], record[1], coll_dict[c1.get()]))
+    if toggle:
+        heading = ["CatalogNumber","CollectionObjectID 1","Collection Name","CollectionObjectID 2","Collection Name"]
+        data_list = list((record[0],record[1],coll_dict[c1.get()],record[2],coll_dict[c2.get()]) for record in data)
+    else:
+        heading = ["CatalogNumber", "CollectionObjectID", "Collection Name"]
+        data_list = list((record[0],record[1],coll_dict[c1.get()]) for record in data)
     frame = configure_data_display(data_list, tab_frame, tab_name, heading, toggle, statement)
     for colx, value in enumerate(heading):
         Label(frame, text="%s" % value, font="bold", relief=RIDGE).grid(column=colx, row=1, sticky=NSEW)
@@ -189,22 +181,19 @@ def display_data(data, tab_frame, tab_name, toggle, statement):
 # checks to make sure merge is legal and displays popup menu
 def merge_options(tab_frame):
     if c1.get() == c2.get():
-        messagebox.askretrycancel("Error", "Cannot merge a collection with itself")
-        return
+        return messagebox.askretrycancel("Error", "Cannot merge a collection with itself")
     num_records = len(fetch_records(""))
-    if num_records != 0:
-        popup = Toplevel()
-        popup.geometry("650x100")
-        popup.title("Merge Collections")
-        Label(popup, text="Move ALL %s records from %s to %s?"
-                          % (num_records, coll_dict[c1.get()], coll_dict[c2.get()]), font="bold").pack()
-        Button(popup, text="Merge all %s records" % num_records,
-               command= lambda: merge_all(tab_frame) or popup.destroy()).pack()
-        Button(popup, text="Select records to merge", command=lambda: specify_records_tab(tab_frame) or popup.destroy()).pack()
-        Button(popup, text="Close", command=lambda: popup.destroy()).pack()
-        return
-    messagebox.showinfo("Specify Collections Merge", "No records found")
-    return
+    if num_records == 0:
+        return messagebox.showinfo("Specify Collections Merge", "No records found")
+    popup = Toplevel()
+    popup.geometry("650x100")
+    popup.title("Merge Collections")
+    Label(popup, text="Move ALL %s records from %s to %s?"
+                      % (num_records, coll_dict[c1.get()], coll_dict[c2.get()]), font="bold").pack()
+    Button(popup, text="Merge all %s records" % num_records,
+           command= lambda: merge_all(tab_frame) or popup.destroy()).pack()
+    Button(popup, text="Select records to merge", command=lambda: specify_records_tab(tab_frame) or popup.destroy()).pack()
+    Button(popup, text="Close", command=lambda: popup.destroy()).pack()
 
 # creates initial display and coordinates program functions
 def main():
