@@ -1,13 +1,13 @@
 """
 Redmine Support #12464
-Creates an xls report of possible locality name typos within a country. Selects possible typos by first
-building a tree using library 'anytree', then iterates each node within a country subtree and takes the Levenshtein
-distance for every comparison, locality names with a Levenshtein distance of 2 or less are flagged as a possible
-typos and are added to the report.
-Note: Typo search is case insensitive (so 'Canada' and 'canada' would be considered duplicates)
+Creates an xls report of possible locality name typos within a country. First builds a geography tree of parentIDs and
+geographyIDs using library 'anytree', then iterates each node within a country subtree, joins geographyID's with
+locality names takes and computes the Levenshtein distance for every comparison, locality names with a Levenshtein
+distance of 1 or 2 are flagged as a possible typos and are added to the report.
+Note: Typo search is case insensitive (so 'Canada' and 'canada' would have a LD of 0)
 """
 import pymysql as MySQLdb
-from anytree import Node, RenderTree, AsciiStyle, PreOrderIter
+from anytree import Node, PreOrderIter
 import xlwt
 import itertools
 from Levenshtein import distance
@@ -18,7 +18,7 @@ fetchRankIDs = db.cursor()
 recordsFromRank = db.cursor()
 fetchLocalityInfo = db.cursor()
 
-fetchRankIDs.execute("SELECT DISTINCT RankID FROM geography WHERE RankID >=200")
+fetchRankIDs.execute("SELECT DISTINCT RankID FROM geography WHERE RankID >=200 ORDER BY RankID ASC")
 rankIDs = fetchRankIDs.fetchall()
 
 treeDict = {}
@@ -37,8 +37,7 @@ def add_node(name, gid, pid, previous_parent):
     treeDict[gid] = (name, pid, node)
     return node
 
-# builds the locality tree by searching for a relationship between an existing GID and new PID of each
-# record and connects where necessary
+# builds the geography tree by searching for a relationship between parentIDs and geographyIDs
 for r in recordsByRank:
     for record in recordsByRank[r]:
         if record[0] not in treeDict:
@@ -47,22 +46,21 @@ for r in recordsByRank:
             b = treeDict[record[0]][2]
             newNode = add_node(record[1], record[2], record[0], b)
 
-# searches each country 'subtree' for names with a Levenshtein distance of 1 or 2
+# searches each country 'subtree' for names with a Levenshtein distance of 1 or 2 and joins the locality name
 for country in recordsByRank[200]:
     localityName = []
     for localityNode in ([node.name for node in PreOrderIter(treeDict[country[2]][2])]):
-        fetchLocalityInfo.execute("SELECT LocalityName, LocalityID FROM locality where GeographyID = %s" % localityNode[1])
-        for locality in fetchLocalityInfo.fetchall():
-            localityName.append((locality[0],locality[1]))
+        fetchLocalityInfo.execute("SELECT LocalityName,LocalityID FROM locality WHERE GeographyID=%s" % localityNode[1])
+        localityName += ((locality[0],locality[1]) for locality in fetchLocalityInfo.fetchall())
     for name1, name2 in itertools.combinations(localityName, 2):
-        LD = distance(name1[0].lower(), name2[0].lower())
+        LD = distance(name1[0].lower(), name2[0].lower()) 
         if 0 < LD  <=2:
-            print(country[1],name1[0],name2[0], name1[1], name2[1], LD)
+            print((country[1],name1[0],name2[0], name1[1], name2[1], LD))
             resultData.append((country[1],name1[0],name2[0], name1[1], name2[1], LD))
 
-# writes contents of resultData to an .xls file saved as '12464TypoReport.xls'
+# writes contents of resultData to an .xls file saved as 'LocalityTypoReport.xls'
 wb = xlwt.Workbook()
-ws = wb.add_sheet("12464 Typo Report")
+ws = wb.add_sheet("Locality Typo Report")
 heading_xf = xlwt.easyxf("font: bold on; align: wrap on, vert centre, horiz center")
 headings = ["Country FullName", "Name 1", "Name 2", "LocalityID 1", "LocalityID 2", "Levenshtein Distance"]
 rowx = 0
@@ -74,6 +72,5 @@ for colx, value in enumerate(headings):
 for i, row in enumerate(resultData):
     for j, col in enumerate(row):
         ws.write(i + 1, j, col)
-wb.save("12464TypoResults.xls")
-
+wb.save("LocalityTypoResults.xls")
 db.close()
