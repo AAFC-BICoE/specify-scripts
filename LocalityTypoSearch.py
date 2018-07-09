@@ -1,9 +1,10 @@
 """
 Redmine Support #12464
 Creates an xls report of possible locality name typos within a country. First builds a geography tree of parentIDs and
-geographyIDs using library 'anytree', then iterates each node within a country subtree, joins geographyID's with
-locality names takes and computes the Levenshtein distance for every comparison, locality names with a Levenshtein
-distance of 1 or 2 are flagged as a possible typos and are added to the report.
+geographyIDs using library 'anytree' excluding locality names with numbers in them to avoid trivial typos (ie. 'Zone1'
+and 'Zone2') then iterates each node within a country subtree, joins geographyID's with locality names and computes the
+Levenshtein distance for every comparison. Locality names with a Levenshtein distance of 1 or 2 are flagged as a
+possible typos and are added to the report.
 Note: Typo search is case insensitive (so 'Canada' and 'canada' would have a LD of 0)
 """
 import pymysql as MySQLdb
@@ -37,14 +38,15 @@ def add_node(name, gid, pid, previous_parent):
     treeDict[gid] = (name, pid, node)
     return node
 
-# builds the geography tree by searching for a relationship between parentIDs and geographyIDs
+# builds the geography tree by searching for a relationship between PIDs and GIDs and filters out names with numbers
 for r in recordsByRank:
     for record in recordsByRank[r]:
-        if record[0] not in treeDict:
-            a = add_node(record[1], record[2], record[0], root)
-        else:
-            b = treeDict[record[0]][2]
-            newNode = add_node(record[1], record[2], record[0], b)
+        if (any(str.isdigit(c) for c in record[1])) is False:
+            if record[0] not in treeDict:
+                a = add_node(record[1], record[2], record[0], root)
+            else:
+                b = treeDict[record[0]][2]
+                newNode = add_node(record[1], record[2], record[0], b)
 
 # searches each country 'subtree' for names with a Levenshtein distance of 1 or 2 and joins the locality name
 for country in recordsByRank[200]:
@@ -55,7 +57,6 @@ for country in recordsByRank[200]:
     for name1, name2 in itertools.combinations(localityName, 2):
         LD = distance(name1[0].lower(), name2[0].lower()) 
         if 0 < LD  <=2:
-            print((country[1],name1[0],name2[0], name1[1], name2[1], LD))
             resultData.append((country[1],name1[0],name2[0], name1[1], name2[1], LD))
 
 # writes contents of resultData to an .xls file saved as 'LocalityTypoReport.xls'
@@ -72,5 +73,5 @@ for colx, value in enumerate(headings):
 for i, row in enumerate(resultData):
     for j, col in enumerate(row):
         ws.write(i + 1, j, col)
-wb.save("LocalityTypoResults.xls")
+wb.save("LocalityTypoReport.xls")
 db.close()
