@@ -50,7 +50,6 @@ for country in recordsByRank[200]:
     for name1, name2 in itertools.combinations(([node.name for node in PreOrderIter((treeDict[country[2]][2]))]), 2):
         LD = distance(name1[0], name2[0])
         if LD == 1:
-            print((country[1], name1[0], name2[0], name1[1], name2[1], LD))
             resultData.append((country[1], name1[0], name2[0], name1[1], name2[1], LD))
 
 # writes the results of the search to an xls file named 'Geography Typo Report'
