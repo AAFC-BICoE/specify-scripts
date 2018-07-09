@@ -5,7 +5,7 @@ library 'anytree' then iterates through each country subtree and compares each n
 full names are a match then they are considered a duplicate and are added to the report.
 """
 import pymysql as MySQLdb
-from anytree import Node, RenderTree, AsciiStyle, PreOrderIter
+from anytree import Node, PreOrderIter
 import xlwt
 import itertools
 

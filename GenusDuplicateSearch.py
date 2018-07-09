@@ -7,7 +7,7 @@ and first letter of author, and the values as the taxonID and full author name. 
 key/value pairs with more than one value to the report as possible duplicates.
 """
 import pymysql as MySQLdb
-from anytree import Node, RenderTree, PreOrderIter
+from anytree import Node, PreOrderIter
 import xlwt
 import itertools
 
