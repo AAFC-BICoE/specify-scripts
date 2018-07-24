@@ -24,12 +24,6 @@ from PIL import Image
 from PIL.ExifTags import TAGS
 import csv
 
-source = ""  # change to where images are kept
-new_folder_path = ""  # change to path where new folder of image copies will be placed, KEEP '/%s'
-
-op_dict = {"=": eq, "<=": le, ">=": ge, ">": gt, "<": lt}
-md_dict = {"Subject": "XPSubject", "Tags": "XPKeywords"} #update to what your OS system calls these md tags
-
 # returns an int that contains only the numbers that are found in the file name that is passed in or None
 def configure(cat_num):
     if cat_num:
@@ -40,21 +34,21 @@ def configure(cat_num):
     return None
 
 # coordinates search function passing in appropriate info and operator expressions according to the drop selections
-def create_image_list(r1, r2, md):
+def create_image_list(r1, r2, md,source,md_dict,op_dict,md_drop,op_drop):
     if r2:
         if r1:
             if md:
-                return md_search(range_file_search(r1, r2), md)
-            return range_file_search(r1, r2)
+                return md_search(range_file_search(r1, r2,source), md,md_dict,md_drop)
+            return range_file_search(r1, r2,source)
         if md:
-            return md_search(single_file_search(r2, op_dict[op_drop]), md)
-        return single_file_search(r2, op_dict[op_drop])
+            return md_search(single_file_search(r2, op_dict[op_drop],source), md,md_dict,md_drop)
+        return single_file_search(r2, op_dict[op_drop],source)
     if md:
-        return md_search(source_search(), md)
+        return md_search(source_search(source), md,md_dict,md_drop)
     return None
 
 # builds dict of metadata from files passed in, searches dict and returns list of files that contain the specified MD
-def md_search(files, md):
+def md_search(files, md,md_dict,md_drop):
     file_list = []
     for file_name in files:
         exif = Image.open(file_name, "r")._getexif()
@@ -66,20 +60,20 @@ def md_search(files, md):
     return file_list
 
 # returns a list of paths for each .JPG file in the source directory
-def source_search():
+def source_search(source):
     return [os.path.join(path, f) for path, sub, files in os.walk(source) for f in files if (f.endswith(".JPG"))]
 
 # searches source directory list for file names contained by the operator passed in for the single file name entered
-def single_file_search(image, op):
-    return [file for file in source_search() if op(configure(os.path.basename(file)), int(image))]
+def single_file_search(image, op,source):
+    return [file for file in source_search(source) if op(configure(os.path.basename(file)), int(image))]
 
 # searches source list for file names in range of file names entered
-def range_file_search(image1, image2):
-    return [file for file in source_search() if
+def range_file_search(image1, image2,source):
+    return [file for file in source_search(source) if
             ge(configure(os.path.basename(file)), int(image1)) and le(configure(os.path.basename(file)), int(image2))]
 
 # reads file names from .csv file and searches source file list for matches
-def csv_search(window):
+def csv_search(window,source,new_folder_path,range1,range2,meta,options1,options2,md_dict,op_dict):
     window.filename = filedialog.askopenfilename(initialdir="/", title="Select .csv file",
                                                  filetypes=(("csv files", "*.csv"), ("all files", "*.*")))
     csv_file = window.filename
@@ -88,26 +82,26 @@ def csv_search(window):
             csv_list = [row[0] for row in csv.reader(open(csv_file, newline=""), delimiter=" ", quotechar="|")]
         except FileNotFoundError:
             return messagebox.showerror("Error", "File not found\nCheck file path")
-        images = [file for file in source_search() if
+        images = [file for file in source_search(source) if
                   configure(os.path.basename(file)) in [configure(catnum) for catnum in csv_list]]
-        search = create_image_list(range1.get(),range2.get(),meta.get())
+        search = create_image_list(range1,range2,meta,source,md_dict,op_dict,options2,options1)
         if search is not None:
             final_names = [j for j in images if (os.path.basename(j) in [os.path.basename(i) for i in search])]
-            copy_files(final_names)
-            files_not_found(csv_list, final_names)
+            copy_files(final_names,new_folder_path)
+            files_not_found(csv_list, final_names,new_folder_path)
             return
-        copy_files(images)
-        files_not_found(csv_list,images)
+        copy_files(images,new_folder_path)
+        files_not_found(csv_list,images,new_folder_path)
 
 # asks user to name new directory, returns formatted path name or None
-def name(image_list):
+def name(image_list,new_folder_path):
     folder = format(askstring("", "%s image(s) found\nCreate new folder for copies" % len(image_list)))
     return str(new_folder_path % folder) if folder != "None" else None
 
 # creates a new csv report of file names that were not found
-def save_errors(image_list):
+def save_errors(image_list,new_folder_path):
     file_name = format(askstring("","Create report of %s files not found" % len(image_list)))
-    new_file = str(new_folder_path % file_name)
+    new_file = str(new_folder_path%file_name)
     if new_file != "None":
         with open("%s.csv"%new_file ,"w", newline="") as csvfile:
             writer =  csv.writer(csvfile, delimiter=" ", quotechar="|", quoting=csv.QUOTE_MINIMAL)
@@ -116,7 +110,7 @@ def save_errors(image_list):
         messagebox.showinfo("Success", "Report saved")
 
 # displays the files that were not found and gives user option to save the data in a report
-def files_not_found(csv_list, images_found):
+def files_not_found(csv_list, images_found,new_folder_path):
     found_images = [configure(os.path.basename(file)) for file in images_found]
     not_found = [i for i in csv_list if configure(i) not in found_images]
     if len(not_found) != 0:
@@ -131,30 +125,25 @@ def files_not_found(csv_list, images_found):
         can.create_window((4, 4), window=frame, anchor="nw")
         frame.bind("<Configure>", lambda e, canvas=can: canvas.configure(scrollregion=canvas.bbox("all")))
         Label(frame, text="The following file(s) were not found:", font="bold").grid(column=0, row=0)
-        Button(frame, text="Save to file", command=lambda: save_errors(not_found)).grid(column=1, row=0)
+        Button(frame, text="Save to file", command=lambda: save_errors(not_found,new_folder_path)).grid(column=1, row=0)
         for i, row in enumerate(not_found):
             Label(frame, text="%s" % row, relief=RIDGE).grid(column=0, row=i + 1, sticky=NSEW)
         return
     return
 
-# creates copies images into new directory
-def copy_files(image_list):
+# creates and copies images into new directory
+def copy_files(image_list,new_folder_path):
     if not image_list:
         return messagebox.showinfo("", "No image(s) found")
-    new_dir = name(image_list)
+    new_dir = name(image_list,new_folder_path)
     while new_dir is None or os.path.isdir(new_dir):
         if new_dir is None:
             return
         messagebox.showerror("Error", "A folder with that name already exists")
-        new_dir = name(image_list)
+        new_dir = name(image_list,new_folder_path)
     os.mkdir(new_dir)
     [shutil.copy(path, new_dir) for path in image_list]
     messagebox.showinfo("Success", "New folder path:\n%s" % new_dir)
-
-# updates the states of the fields according to what is passed in
-def state(r1_state, r2_state):
-    range1["state"] = r1_state
-    range2["state"] = r2_state
 
 # creates entry box for each field a user can select records by and controls what boxes are disabled
 def create_entry_box(window, col, row, state_toggle):
@@ -162,27 +151,24 @@ def create_entry_box(window, col, row, state_toggle):
     box_name.grid(column=col, row=row, sticky=W)
     return box_name
 
-# traces the meta data drop down menu
-def md_drop_change(option):
-    global md_drop
-    md_drop = option.get()
-
 # traces the operator drop down menu, updates states of entry boxes
-def op_drop_change(option):
-    global op_drop
+def op_drop_change(option,range1):
     op_drop = option.get()
     if op_drop == 'to':
-        return state(NORMAL, NORMAL)
-    return state(DISABLED, NORMAL)
+        return range1.configure(state=NORMAL)
+    return range1.configure(state=DISABLED)
 
 # coordinates main window, creates widgets, labels, buttons, menus, calls on appropriate functions
 def main():
+    source = ""  # change to where images are kept
+    new_folder_path = "/%s"  # change to path where new folder of image copies will be placed, KEEP '/%s'
+    op_dict = {"=": eq, "<=": le, ">=": ge, ">": gt, "<": lt}
+    md_dict = {"Subject": "XPSubject", "Tags": "XPKeywords"}  # update to what your OS system calls these md tags
     if not os.path.exists(source):
         return messagebox.showerror("Error", "Please check source path configuration\n Error in path %s" % source)
     window = Tk()
     window.title("Specify Image Select ")
     window.geometry("700x200")
-    global range1, range2, op_drop, md_drop, meta
     Label(window, text="Enter the image file name(s) to retrieve.\nNew directory will have copies of "
                        "selected files").grid(column=0, row=0, columnspan=6)
     Label(window, text="Search by file name").grid(column=0, row=1)
@@ -194,10 +180,15 @@ def main():
     meta = create_entry_box(window, 2, 2, NORMAL)
     OptionMenu(window, options1, "=", "<=", ">=", ">", "<", "to").grid(column=3, row=1)
     OptionMenu(window, options2, "Subject", "Tags").grid(column=1, row=2, sticky=W)
-    options2.trace("w", lambda *args: md_drop_change(options2))
-    options1.trace("w", lambda *args: op_drop_change(options1))
-    Button(window, text="Search from a .csv file", command=lambda: csv_search(window)).grid(column=2, row=4)
+    options1.trace("w", lambda *args: op_drop_change(options1,range1))
+    Button(window, text="Search from a .csv file", command=lambda:
+            csv_search(window,source,new_folder_path,range1.get(),range2.get(),meta.get(),
+                       options1.get(),options2.get(),md_dict,op_dict)).grid(column=2, row=4)
     Button(window, text="Select image(s)", command=lambda:
-            copy_files(create_image_list(configure(range1.get()), configure(range2.get()), meta.get()))).grid(column=4, row=4)
+            copy_files(create_image_list(configure(range1.get()), configure(range2.get()),
+                        meta.get(),source,md_dict,op_dict,options2.get(),options1.get()),
+                       new_folder_path)).grid(column=4, row=4)
     return window.mainloop()
-main()
+
+if __name__ == "__main__":
+    main()
