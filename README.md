@@ -5,8 +5,8 @@ A collection of scripts to be used for data cleaning and making reports with AAF
 - [Python >=3.5](https://www.python.org/)
 - localhost [MySQL >=5.5](https://dev.mysql.com/doc/mysql-getting-started/en/) server
   - Note the root username and password you create when installing MySQL 
-- AAFC Specify Data
-- MS Excel 97/2000/XP/2003 XLS or equivalent  
+- Data from **Specify 6**
+ 
  
  ## Running Scripts 
  **pymysql Connector:**
