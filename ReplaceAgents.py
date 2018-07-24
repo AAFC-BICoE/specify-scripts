@@ -1,45 +1,49 @@
 """
 Redmine Support #5722
-Given 2 GUID's pointing to a bad agent and good agent in the schema, the specified 'Bad Agent' is deleted from
-the schema by changing all references of it to the specified 'Good Agent'.
-
-# sample showing proper way GUID's are to be input, sample refers to 'bad agent': Haider_NO Fatima
-    guidList = [("cc6b6a55-6571-45d9-a934-cb2aa1c66cc1", "4fd2f063-e490-4098-821a-6b207e1d39d0")]
+Reading from a csv file containing two GUID's, the specified 'Bad Agent' is deleted from the schema by changing all
+references of the 'Bad Agent' to the specified 'Good Agent' using the database schema to look for references of 'AgentID'
+in column names and foreign keys. File path of csv needs to be specified first.
+NOTE: csv format should have the GUID of the agent to be deleted FIRST, then the GUID of the agent that the info will be
+changed to SECOND in the same row
 """
 import pymysql as MySQLdb
+import csv
 
 # selects agentIDs corresponding to provided GUID's
-def agent_info(guid):
+def agent_info(fetch_id,guid):
     fetch_id.execute("SELECT AgentID FROM agent WHERE GUID = '%s' " % guid)
     return fetch_id.fetchall()[0][0]
 
 # updates instances of the 'bad agent' with the good agent then deletes the bad agent
-def update_agents():
-    for agent in guidList:
+def update_agents(guid_list,fetch_id,agent_references,update,delete,db):
+    for agent in guid_list:
         try:
-            bad_agent = agent_info(agent[0])
-            good_agent = agent_info(agent[1])
+            bad_agent = agent_info(fetch_id,agent[0])
+            good_agent = agent_info(fetch_id,agent[1])
             for column_name in agent_references:
                 update.execute("UPDATE %s SET %s = %s WHERE %s = %s"
                                % (column_name[0],column_name[1],good_agent,column_name[1],bad_agent))
             delete.execute("DELETE FROM agent WHERE AgentID = %s" % bad_agent)
             db.commit()
         except IndexError:
-            print("Agent with GUID: ",agent," not found in database" )
+           print("Agent GUID set: ",agent," not found in database" )
 
-if __name__ == "__main__":
+# creates cursors and list of data from csv file, selects tables with columns and foreign keys that reference agentIDs
+def main():
     db = MySQLdb.connect("localhost", '''"MySQLusername", "MySQLpassword", "MySQLdatabaseName"''')
     fetch_keys = db.cursor()
     fetch_references = db.cursor()
     fetch_id = db.cursor()
     update = db.cursor()
     delete = db.cursor()
-    guidList = [("GUID OF AGENT TO BE DELETED", "GUID OF GOOD AGENT")]
-
-    # selects all tables with columns that reference an agentID field by name or by foreign key
+    with open("filepath.csv", newline='') as csvfile: # Input filepath of csv
+        guid_list = [row[0].split(",") for row in csv.reader(csvfile,delimiter=" ", quotechar="|")]
     fetch_keys.execute("SELECT TABLE_NAME, COLUMN_NAME FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE "
                        "WHERE CONSTRAINT_SCHEMA = 'specify' AND REFERENCED_COLUMN_NAME LIKE '%AgentID%'")
     fetch_references.execute("SELECT TABLE_NAME, COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE "
                              "COLUMN_NAME LIKE '%AgentID%' AND TABLE_NAME != 'AGENT'")
     agent_references = (fetch_keys.fetchall() + fetch_references.fetchall())
-    update_agents()
+    update_agents(guid_list,fetch_id,agent_references,update,delete,db)
+
+if __name__ == "__main__":
+    main()
