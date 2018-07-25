@@ -1,83 +1,96 @@
 """
 Redmine Support #12204
-Creates an xls report of duplicate taxon names that are part of the same family and have the same first letter of author.
-First builds the taxon tree using library 'anytree', then iterates through each family subtree and creates a dictionary
-with keys as the taxon fullname and first letter of author, and the values as taxonID. Then searches through dictionary
- and adds key/value pairs with more than one value to the report.
+Creates a csv report of possible duplicate full taxon names that are in the same family and have the same author first
+letter. Creates a tree of taxon parent-children relationships by ranks and parentID's using the library 'anytree',
+then iterates through each family subtree and creates a dictionary with keys as the family name and the author first
+letter, and the values as the taxonID and full author name. Then searches through dictionary and adds key/value pairs
+with more than one value to the report as possible duplicates.
 """
 import pymysql as MySQLdb
 from anytree import Node, PreOrderIter
-import xlwt
+import csv
 import itertools
 
-db = MySQLdb.connect("localhost", '''"MySQLusername", "MySQLpassword", "MySQLdatabaseName"''')
+# selects ranks within the taxon schema
+def fetch_ranks(db):
+    db_rank_id = db.cursor()
+    db_rank_id.execute("SELECT DISTINCT RankID FROM taxon WHERE RankID >=140 ORDER BY RankID ASC")
+    return db_rank_id.fetchall()
 
-fetchRankIDs = db.cursor()
-recordsFromRank = db.cursor()
-
-fetchRankIDs.execute("SELECT DISTINCT RankID FROM taxon WHERE RankID >=140 ORDER BY RankID ASC ")
-rankIDs = fetchRankIDs.fetchall()
-
-treeDict = {}
-recordsByRank = {}
-resultData = []
-root = Node("root")
-
-# creates new node and new treeDict key, sets parent to the node that was created before
-def add_node(name, gid, pid, author,previous_parent):
+# creates new node and new tree key, sets parent to the node that was created before
+def add_node(name, gid, pid, author,previous_parent,tree):
     node = Node((name, gid, author), parent=previous_parent)
-    treeDict[gid] = (name, pid, node)
+    tree[gid] = (name, pid, node)
     return node
 
 # if an existing key is already in dictionary, appends value, or creates new key/value and adds to dictionary
-def add_to_dict(dict,key,value):
-    if key in dict: dict[key].append(value)
-    else: dict[key]=[value]
-    return dict
+def add_to_dict(dictionary,key,value):
+    if key in dictionary:
+        dictionary[key].append(value)
+    else:
+        dictionary[key]=[value]
+    return dictionary
 
 # calls on function to add to dict with parameters chosen according to what the author is for each record
-def check_family_dict(familyDict, name, author, TID):
-    return (add_to_dict(familyDict, (name,author), (TID,author)) if author is None else
-        (add_to_dict(familyDict, (name,author[0]), (TID,author)) if (author[0] != '(') and (author != '[')
-         else add_to_dict(familyDict,(name,author[1]), (TID,author))))
+def check_family_dict(family_dict, name, author, tid):
+    return (add_to_dict(family_dict, (name,author), (tid,author)) if author is None else
+        (add_to_dict(family_dict, (name,author[0]), (tid,author)) if (author[0] != '(') and (author != '[')
+         else add_to_dict(family_dict,(name,author[1]), (tid,author))))
 
 # selects all records with a certain rankID and puts them in a dictionary
-for iD in rankIDs:
-    recordsFromRank.execute("SELECT ParentID, FullName, TaxonID, Author FROM taxon WHERE RankID = %s", (iD[0]))
-    recordsByRank[iD[0]] = recordsFromRank.fetchall()
+def rank_dict(db):
+    rank_records_dict = {}
+    db_record_info = db.cursor()
+    for iD in fetch_ranks(db):
+        db_record_info.execute("SELECT ParentID, FullName, TaxonID, Author FROM taxon WHERE RankID = %s",(iD[0]))
+        rank_records_dict[iD[0]] = db_record_info.fetchall()
+    return rank_records_dict
 
-# builds the taxon tree by searching for a relationship between existing TIDs and new PIDs of records
-for r in recordsByRank:
-    for record in recordsByRank[r]:
-        if record[0] not in treeDict:
-            a = add_node(record[1], record[2], record[0], record[3], root)
-        else:
-            b = treeDict[record[0]][2]
-            newNode = add_node(record[1], record[2], record[0], record[3], b)
+# builds the taxon tree by searching relationships between existing taxonID's and new parentID's within the tree
+def build_tree(rank_records_dict):
+    tree = {}
+    root = Node("root")
+    for r in rank_records_dict:
+        for record in rank_records_dict[r]:
+            if record[0] not in tree:
+                add_node(record[1], record[2], record[0], record[3], root,tree)
+            else:
+                b = tree[record[0]][2]
+                add_node(record[1], record[2], record[0], record[3], b,tree)
+    return tree
 
-for family in recordsByRank[140]:
-    familyDict = {}
-    for name in [node.name for node in PreOrderIter(treeDict[family[2]][2])]:
-        if (name[2] is None) or (name[2] == ""): familyDict = check_family_dict(familyDict,name[0],None,name[1])
-        else: familyDict = check_family_dict(familyDict,name[0],name[2],name[1])
-    resultData+=[(family[1],key[0],str([i[1] for i in familyDict[key]]), str([j[0] for j in familyDict[key]])) for
-                 key in familyDict if len(familyDict[key]) > 1]
+# searches by family for matching full names and coordinates checks for author, adds to report list when match is found
+def search_tree(rank_records_dict,tree):
+    result_data = []
+    family_names = rank_records_dict[140]
+    for family in family_names:
+        family_dict = {}
+        for name in [node.name for node in PreOrderIter(tree[family[2]][2])]:
+            if (name[2] is None) or (name[2] == ""):
+                family_dict = check_family_dict(family_dict,name[0],None,name[1])
+            else:
+                family_dict = check_family_dict(family_dict,name[0],name[2],name[1])
+        result_data+=[(family[1],key[0],str([i[1] for i in family_dict[key]]), str([j[0] for j in family_dict[key]]))
+                      for key in family_dict if len(family_dict[key]) > 1]
+    return result_data
 
-# writes the results of the search to an xls file named 'TaxonDuplicateReport'
-wb = xlwt.Workbook()
-ws = wb.add_sheet("Taxon Duplicate Report")
-heading_xf = xlwt.easyxf("font: bold on; align: wrap on, vert centre, horiz center")
-headings = ["Family FullName", "Duplicate FullName", "Authors", "TaxonIDs"]
-rowx = 0
-ws.set_panes_frozen(True)
-ws.set_horz_split_pos(rowx + 1)
-ws.set_remove_splits(True)
-for colx, value in enumerate(headings):
-    ws.write(rowx, colx, value, heading_xf)
-for i, row in enumerate(resultData):
-    for j, col in enumerate(row):
-        ws.write(i + 1, j, col)
-v = [len(row[0]) for row in resultData]
-ws.col(0).width = 256 * max(v) if v else 0
-wb.save("TaxonDuplicateReport.xls")
-db.close()
+# writes the duplicate data passed in to a csv file named 'TaxonDuplicateReport.csv'
+def write_report(data):
+    with open("TaxonDuplicateReport.csv", "w") as file_writer:
+        writer = csv.writer(file_writer)
+        writer.writerow(["Family Name", "Duplicate Full Name", "Authors", "TaxonIDs"])
+        for row in data:
+            writer.writerow(row)
+    print("Report saved as 'TaxonDuplicateReport.csv'")
+
+# calls on functions
+def main():
+    db = MySQLdb.connect("localhost", '''"MySQLusername", "MySQLpassword", "MySQLdatabaseName"''')
+    print("Searching for duplicate taxon full names in the same family ")
+    rank_records_dict = rank_dict(db)
+    tree = build_tree(rank_records_dict)
+    result_data = search_tree(rank_records_dict, tree)
+    write_report(result_data)
+
+if __name__ == "__main__":
+    main()

@@ -74,7 +74,7 @@ def search_tree(rank_records_dict,tree):
                     typos.append((genus[1], name1[0], name2[0], name1[2], name2[2], name1[1], name2[1], ld))
     return typos
 
-# writes the typo data passed in to a csv file named 'GenusDuplicateReport.csv'
+# writes the typo data passed in to a csv file named 'GenusTypoReport.csv'
 def write_report(data):
     with open("GenusTypoReport.csv", "w") as file_writer:
         writer = csv.writer(file_writer)
