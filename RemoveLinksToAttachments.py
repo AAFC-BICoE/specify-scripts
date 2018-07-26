@@ -6,7 +6,7 @@ references from the tables and finally deleting from the attachment table itself
 the attachmentID's that are going to be deleted in a csv file.
 """
 import pymysql as MySQLdb
-import csv
+from csvwriter import write_report
 
 # selects AttachmentIDs that reference a collection object and are of image/jpeg type
 def select_attachments(db):
@@ -22,13 +22,9 @@ def select_references(db):
                          " AND REFERENCED_COLUMN_NAME LIKE 'AttachmentID' and table_name != 'attachment'")
     return db_reference.fetchall()
 
-# writes a csv file containing the attachment ID's passed in
-def write_report(file_name,data):
-    with open("%s.csv" % file_name, "w") as file_writer:
-        writer = csv.writer(file_writer)
-        writer.writerow(["Attachment ID"])
-        for row in data:
-            writer.writerow(row)
+# writes the data passed in to a csv file
+def save_report(file_name,data):
+    write_report(file_name,["Attachment ID"],data)
     print("Report saved as '%s.csv'" % file_name)
 
 # deletes any entry that references the attachmentID, then deletes attachmentID from the schema, handels any conflicts
@@ -55,7 +51,7 @@ def delete_attachments(db,attachments):
         for c in conflicts:
             print(c)
     elif display == "save":
-        write_report("AttachmentConflicts",conflicts)
+        save_report("AttachmentConflicts",conflicts)
     elif display == "n":
         pass
     else:
@@ -73,7 +69,7 @@ def delete_command(attachments,db):
                 print(name[0])
             delete_command(attachments,db)
         elif show == "save":
-            write_report("AttachmentsToDelete",attachments)
+            save_report("AttachmentsToDelete",attachments)
             delete_command(attachments,db)
         else:
             print("Invalid command")
