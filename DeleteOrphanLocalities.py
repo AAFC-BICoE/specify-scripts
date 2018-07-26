@@ -52,12 +52,12 @@ def delete_orphans(db,orphans):
             for lid in conflicts:
                 print(lid)
 
-# calls on appropriate functions, displays user options connects to database via command line arguments 
+# calls on appropriate functions, displays user options connects to database via command line arguments
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-u", "--username", action="store", dest="username", help="MySQL username")
-    parser.add_argument("-p", "--password", action="store", dest="password", help="MySQL password")
-    parser.add_argument("-d", "--database", action="store", dest="database", help="Name of MySQL specify database")
+    parser.add_argument("-u", "--username", action="store", dest="username", help="MySQL username", required= True)
+    parser.add_argument("-p", "--password", action="store", dest="password", help="MySQL password", required= True)
+    parser.add_argument("-d", "--database", action="store", dest="database", help="Name of MySQL specify database", required= True)
     args = parser.parse_args()
     username = args.username
     password = args.password
