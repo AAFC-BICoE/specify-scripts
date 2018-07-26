@@ -8,13 +8,13 @@ collection is deleted after all switches have been made. If any conflicting cata
 displayed and user has option to save report of conflicts as a csv file.
 """
 import pymysql as MySQLdb
-import csv
 import tkinter as tk
 from tkinter import *
 from tkinter.ttk import *
 from tkinter import (messagebox, ttk)
 from tkinter.simpledialog import askstring
 from tkinter.messagebox import showinfo
+from csvwriter import write_report
 
 # creates a dictionary of the collections that are present in schema
 def create_collection_dict(db):
@@ -126,15 +126,11 @@ def specify_records_tab(tab_frame,tab_control,coll_dict,c1,c2,db):
         ttk.Frame(tab_control),cat_range1,cat_range2, cat_start,cat_end,
         coll_dict,c1,c2,db,tab_control)).grid(column=4, row=6)
 
-# saves data to an xls file that user names
+# saves data to a csv file that user names
 def save_to_file(records, heading):
     name = (format(askstring("Save Report", "Save Report as: ")))
     if name != "None":
-        with open("%s.csv"%name,"w") as file_writer:
-            writer = csv.writer(file_writer)
-            writer.writerow(heading)
-            for row in records:
-                writer.writerow(row)
+        write_report(name,heading,records)
         messagebox.showinfo("Success","Report saved as %s.csv"%name)
 
 # creates display tab and configures data to display, creates buttons depending on what data is being displayed

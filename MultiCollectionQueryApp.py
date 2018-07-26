@@ -5,7 +5,6 @@ number, collector lastname, taxon name, province and/or year. Once search result
 ability to save a copy of the results in a csv file.
 """
 import pymysql as MySQLdb
-import csv
 import tkinter as tk
 import itertools
 from tkinter import *
@@ -14,6 +13,7 @@ from tkinter import messagebox
 from tkinter.simpledialog import askstring
 from tkinter.messagebox import showinfo
 from tkinter import ttk
+from csvwriter import write_report
 
 # formats records with multiple collectors to be only displayed once, counts the number of distinct catalog numbers
 def format_records(raw_data):
@@ -59,11 +59,7 @@ def return_entry(catalognum,dao,lastname,geography,year,province,db):
 def save_to_file(records,headings):
     name = (format(askstring("Save Query Search","Save results of query as: ")))
     if name != 'None':
-        with open("%s.csv" % name, "w") as file_writer:
-            writer = csv.writer(file_writer)
-            writer.writerow(headings)
-            for row in records:
-                writer.writerow(row)
+        write_report(name,headings,records)
         messagebox.showinfo("Success", "Report saved as %s.csv" % name)
 
 # configures the display of the results of each query

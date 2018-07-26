@@ -6,7 +6,7 @@ create a csv file of the locality ID's of the orphans that will be deleted, and/
 occur while deleting.
 """
 import pymysql as MySQLdb
-import csv
+from csvwriter import write_report
 
 # selects all tables where the localityID is referenced as a foreign key
 def foreign_keys(db):
@@ -21,15 +21,6 @@ def orphan_ids(db):
     db_orphan_ids.execute("SELECT L.LocalityID FROM locality L LEFT JOIN collectingevent C "
                              "ON C.LocalityID = L.LocalityID WHERE C.LocalityID IS NULL ")
     return db_orphan_ids.fetchall()
-
-# writes a csv file containing the locality ID's passed in
-def write_report(file_name,data):
-    with open("%s.csv" % file_name, "w") as file_writer:
-        writer = csv.writer(file_writer)
-        writer.writerow(["Locality ID"])
-        for row in data:
-            writer.writerow(row)
-    print("Report saved as '%s.csv'" % file_name)
 
 # sets any references to the orphan locality in the database to NULL then deletes the orphan locality record
 def delete_orphans(db,orphans):
@@ -52,7 +43,9 @@ def delete_orphans(db,orphans):
         print("%s localities deleted" % (int(len(orphans)) - int(len(conflicts))))
         conflict_report = input("%s conflicts occurred [save/show/n] " % len(conflicts))
         if conflict_report == 'save':
-            write_report("OrphanConflicts",conflicts)
+            # writes a csv file containing the locality ID's passed in
+            write_report("OrphanConflicts",["Locality ID"],conflicts)
+            print("Report saved as '%s.csv'" % file_name)
         elif conflict_report == "show":
             for lid in conflicts:
                 print(lid)
@@ -66,7 +59,9 @@ def main():
     if delete_all == 'y':
         delete_orphans(db,orphans)
     elif delete_all == 'save':
-        write_report("LocalitiesToBeDeleted", orphans)
+        # writes a csv file containing the locality ID's passed in
+        write_report("LocalitiesToBeDeleted",["Locality ID"], orphans)
+        print("Report saved as '%s.csv'" % file_name)
     elif delete_all == "n":
         pass
     else:

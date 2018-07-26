@@ -15,14 +15,15 @@ NOTE: Some configurations must be done before script will work properly:
 """
 import os
 import shutil
+import tkinter as tk
+import csv
 from tkinter import *
 from tkinter import messagebox, filedialog
-import tkinter as tk
 from tkinter.simpledialog import askstring
 from operator import eq, ge, le, lt, gt
 from PIL import Image
 from PIL.ExifTags import TAGS
-import csv
+from csvwriter import write_report
 
 # returns an int that contains only the numbers that are found in the file name that is passed in or None
 def configure(cat_num):
@@ -103,10 +104,7 @@ def save_errors(image_list,new_folder_path):
     file_name = format(askstring("","Create report of %s files not found" % len(image_list)))
     new_file = str(new_folder_path%file_name)
     if new_file != "None":
-        with open("%s.csv"%new_file ,"w", newline="") as csvfile:
-            writer =  csv.writer(csvfile, delimiter=" ", quotechar="|", quoting=csv.QUOTE_MINIMAL)
-            for i in image_list:
-                writer.writerow([i])
+        write_report(new_file,["Files Not Found"], image_list)
         messagebox.showinfo("Success", "Report saved")
 
 # displays the files that were not found and gives user option to save the data in a report
