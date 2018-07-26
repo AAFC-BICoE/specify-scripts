@@ -3,12 +3,12 @@ Redmine Support #4173
 Removes all attachments and references/links to attachments from the schema by selecting ID's from collection objects
 with attachments and selecting all tables where attachments are referenced. Then, uses the ID's to delete the
 references from the tables and finally deleting from the attachment table itself. Gives user the option to save/show
-the attachmentID's that are going to be deleted in a csv file.
-db = MySQLdb.connect("localhost", "brookec", "temppass", "specify")
+the attachmentID's that are going to be deleted in a csv file, time stamps the csv file name.
 """
 import pymysql
 from csvwriter import write_report
 import argparse
+import datetime
 
 # selects AttachmentIDs that reference a collection object and are of image/jpeg type
 def select_attachments(db):
@@ -39,7 +39,7 @@ def delete_attachments(db,attachments):
             for table in select_references(db):
                 db_delete_reference.execute("DELETE FROM %s WHERE AttachmentID = %s" % (table[0], record[0]))
             db_delete_attachment.execute("DELETE FROM attachment WHERE AttachmentID = %s" % record[0])
-            # db.commit()
+            db.commit()
         except:
             conflicts += [record[0]]
     if len(conflicts) == 0:
@@ -71,7 +71,7 @@ def delete_command(attachments,db):
                 print(name[0])
             delete_command(attachments,db)
         elif show == "save":
-            save_report("AttachmentsToDelete",attachments)
+            save_report(("AttachmentsToDelete[%s]" % (datetime.date.today())),attachments)
             delete_command(attachments,db)
         else:
             print("Invalid command")
@@ -99,7 +99,6 @@ def main():
         return
     attachments = select_attachments(db)
     delete_command(attachments, db)
-
 
 if __name__ == "__main__":
     main()
