@@ -3,9 +3,11 @@ Redmine Support #12199
 Deletes localities that are not attached to any collectionobject by selecting the orphan localityID's then updating any
 references of the localityID in the schema to NULL, then deletes the locality from schema. Gives user the option to
 create a csv file of the locality ID's of the orphans that will be deleted, and/or a csv file of any conflicts that
-occur while deleting.
+occur while deleting. Supports command line arguments
 """
-import pymysql as MySQLdb
+import pymysql
+import argparse
+import datetime
 from csvwriter import write_report
 
 # selects all tables where the localityID is referenced as a foreign key
@@ -50,9 +52,21 @@ def delete_orphans(db,orphans):
             for lid in conflicts:
                 print(lid)
 
-# calls on appropriate functions and displays user options
+# calls on appropriate functions, displays user options connects to database via command line arguments 
 def main():
-    db = MySQLdb.connect("localhost", '''"MySQLusername", "MySQLpassword", "MySQLdatabaseName"''')
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-u", "--username", action="store", dest="username", help="MySQL username")
+    parser.add_argument("-p", "--password", action="store", dest="password", help="MySQL password")
+    parser.add_argument("-d", "--database", action="store", dest="database", help="Name of MySQL specify database")
+    args = parser.parse_args()
+    username = args.username
+    password = args.password
+    database = args.database
+    try:
+        db = pymysql.connect("localhost", username, password, database)
+    except pymysql.err.OperationalError:
+        print('Error connecting to database, try again')
+        return
     orphans = orphan_ids(db)
     print('%s orphan localities found' % len(orphans))
     delete_all = input('Delete all? [y/n/save] ')
@@ -60,7 +74,8 @@ def main():
         delete_orphans(db,orphans)
     elif delete_all == 'save':
         # writes a csv file containing the locality ID's passed in
-        write_report("LocalitiesToBeDeleted",["Locality ID"], orphans)
+        file_name = ("LocalitiesToBeDeleted[%s]" % (datetime.date.today()))
+        write_report(file_name,["Locality ID"], orphans)
         print("Report saved as '%s.csv'" % file_name)
     elif delete_all == "n":
         pass
