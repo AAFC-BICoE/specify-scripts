@@ -4,9 +4,11 @@ Removes all attachments and references/links to attachments from the schema by s
 with attachments and selecting all tables where attachments are referenced. Then, uses the ID's to delete the
 references from the tables and finally deleting from the attachment table itself. Gives user the option to save/show
 the attachmentID's that are going to be deleted in a csv file.
+db = MySQLdb.connect("localhost", "brookec", "temppass", "specify")
 """
-import pymysql as MySQLdb
+import pymysql
 from csvwriter import write_report
+import argparse
 
 # selects AttachmentIDs that reference a collection object and are of image/jpeg type
 def select_attachments(db):
@@ -37,7 +39,7 @@ def delete_attachments(db,attachments):
             for table in select_references(db):
                 db_delete_reference.execute("DELETE FROM %s WHERE AttachmentID = %s" % (table[0], record[0]))
             db_delete_attachment.execute("DELETE FROM attachment WHERE AttachmentID = %s" % record[0])
-            db.commit()
+            # db.commit()
         except:
             conflicts += [record[0]]
     if len(conflicts) == 0:
@@ -59,7 +61,7 @@ def delete_attachments(db,attachments):
 
 # gives user option of what to do with the attachments
 def delete_command(attachments,db):
-    delete_option = input("Delete %s attachments? [y/n/show]" % len(attachments))
+    delete_option = input("%s attachments found, delete all? [y/n/show]" % len(attachments))
     if delete_option == "y":
         delete_attachments(db, attachments)
     elif delete_option == "show":
@@ -80,11 +82,24 @@ def delete_command(attachments,db):
         print("Invalid command")
         delete_command(attachments,db)
 
-# calls on functions
+# calls on functions and creates argument parser commands
 def main():
-    db = MySQLdb.connect("localhost", '''"MySQLusername", "MySQLpassword", "MySQLdatabaseName"''')
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-u","--username", action="store", dest ="username", help="MySQL username")
+    parser.add_argument("-p", "--password", action="store", dest="password", help="MySQL password")
+    parser.add_argument("-d", "--database", action="store", dest="database", help="Name of MySQL specify database")
+    args = parser.parse_args()
+    username = args.username
+    password = args.password
+    database = args.database
+    try:
+        db = pymysql.connect("localhost", username, password, database)
+    except pymysql.err.OperationalError:
+        print('Error connecting to database, try again')
+        return
     attachments = select_attachments(db)
-    delete_command(attachments,db)
+    delete_command(attachments, db)
+
 
 if __name__ == "__main__":
     main()
