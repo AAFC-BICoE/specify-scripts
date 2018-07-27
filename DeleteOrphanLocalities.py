@@ -1,9 +1,9 @@
 """
 Redmine Support #12199
 Deletes localities that are not attached to any collectionobject by selecting the orphan localityID's then updating any
-references of the localityID in the schema to NULL, then deletes the locality from schema. Gives user the option to
-create a csv file of the locality ID's of the orphans that will be deleted, and/or a csv file of any conflicts that
-occur while deleting. Supports command line arguments
+references of the localityID in the schema to NULL, then deletes the locality from schema. Defaults to saving a file of
+the locality ID's to be deleted (with timestamp in filename) and supports option to print locality ID's to scree.
+Defaults to not actually deleting attachments unless prompted with --delete argument.
 """
 import pymysql
 import argparse
@@ -29,59 +29,45 @@ def delete_orphans(db,orphans):
     db_remove_reference = db.cursor()
     db_delete = db.cursor()
     referenced_tables = foreign_keys(db)
-    conflicts = []
     for iD in orphans:
-        try:
-            for tableName in referenced_tables:
-                db_remove_reference.execute("UPDATE %s SET LocalityID=NULL WHERE LocalityID=%s" % (tableName[0],iD[0]))
-            db_delete.execute('DELETE FROM locality WHERE LocalityID=%s' % (iD[0]))
-            db.commit()
-        except:
-            conflicts += [iD[0]]
-    if len(conflicts) == 0:
-        print('%s localities deleted' % len(orphans))
-        print("No conflicts")
-    else:
-        print("%s localities deleted" % (int(len(orphans)) - int(len(conflicts))))
-        conflict_report = input("%s conflicts occurred [save/show/n] " % len(conflicts))
-        if conflict_report == 'save':
-            # writes a csv file containing the locality ID's passed in
-            write_report("OrphanConflicts",["Locality ID"],conflicts)
-            print("Report saved as '%s.csv'" % file_name)
-        elif conflict_report == "show":
-            for lid in conflicts:
-                print(lid)
+        for tableName in referenced_tables:
+            db_remove_reference.execute("UPDATE %s SET LocalityID=NULL WHERE LocalityID=%s" % (tableName[0],iD[0]))
+        db_delete.execute('DELETE FROM locality WHERE LocalityID=%s' % (iD[0]))
+        db.commit()
+    print('%s orphan localities deleted' % len(orphans))
 
-# calls on appropriate functions, displays user options connects to database via command line arguments
+# calls on appropriate functions, connects to database via command line arguments
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("-u", "--username", action="store", dest="username", help="MySQL username", required= True)
     parser.add_argument("-p", "--password", action="store", dest="password", help="MySQL password", required= True)
     parser.add_argument("-d", "--database", action="store", dest="database", help="Name of MySQL specify database", required= True)
+    parser.add_argument("--show", action="store_true", dest="show", help="Print Locality ID's to be deleted to screen")
+    parser.add_argument("--delete", action="store_true", dest="delete", help="Delete orphan localities")
     args = parser.parse_args()
     username = args.username
     password = args.password
     database = args.database
+    show= args.show
+    delete = args.delete
     try:
         db = pymysql.connect("localhost", username, password, database)
     except pymysql.err.OperationalError:
         print('Error connecting to database, try again')
         return
     orphans = orphan_ids(db)
-    print('%s orphan localities found' % len(orphans))
-    delete_all = input('Delete all? [y/n/save] ')
-    if delete_all == 'y':
-        delete_orphans(db,orphans)
-    elif delete_all == 'save':
-        # writes a csv file containing the locality ID's passed in
-        file_name = ("LocalitiesToBeDeleted[%s]" % (datetime.date.today()))
-        write_report(file_name,["Locality ID"], orphans)
-        print("Report saved as '%s.csv'" % file_name)
-    elif delete_all == "n":
-        pass
-    else:
-        print("Invalid command")
-        main()
+    # writes a csv file containing the locality ID's passed in
+    file_name = ("LocalitiesDeleted[%s]" % (datetime.date.today()))
+    write_report(file_name, ["Locality ID"], orphans)
+    if show:
+        for iD in orphans:
+            print(iD)
+    try:
+        if delete:
+            delete_orphans(db,orphans)
+    except pymysql.err.DatabaseError:
+        print("Error when trying to delete orphan localities")
+    print("Report saved as '%s.csv'" % file_name)
 
 if __name__ == "__main__":
     main()
