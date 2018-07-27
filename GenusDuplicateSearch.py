@@ -4,13 +4,14 @@ Creates a csv report of possible duplicate full taxon names that are in the same
 letter. Creates a tree of taxon parent-children relationships by ranks and parentID's using the library  'anytree' and
 'specifytreebuilder', then iterates through each genus subtree and creates a dictionary with keys as the genus name and
 the author first letter, and the values as the taxonID and full author name. Then searches through dictionary and adds
-key/value pairs with more than one value to the report as possible duplicates.
+key/value pairs with more than one value to the report as possible duplicates. Supports command line arguments
 """
 import pymysql as MySQLdb
 from anytree import PreOrderIter
 import itertools
 from csvwriter import write_report
 from specifytreebuilder import add_to_dict, rank_dict, build_tree_with_nums
+import argparse
 
 # calls on function to add to dictionary with parameters chosen according to what the author is for each record
 def check_genus_dict(genus_dict, name, author, tid):
