@@ -25,11 +25,6 @@ def select_references(db):
                          " AND REFERENCED_COLUMN_NAME LIKE 'AttachmentID' and table_name != 'attachment'")
     return db_reference.fetchall()
 
-# writes the data passed in to a csv file
-def save_report(file_name,data):
-    write_report(file_name,["Attachment ID"],data)
-    print("Report saved as '%s.csv'" % file_name)
-
 # deletes any entry that references the attachmentID, then deletes attachmentID from the schema, handles any conflicts
 def delete_attachments(db,attachments):
     db_delete_reference = db.cursor()
@@ -44,25 +39,24 @@ def delete_attachments(db,attachments):
 # calls on functions and creates argument parser commands
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-u","--username", action="store", dest ="username", help="MySQL username")
-    parser.add_argument("-p", "--password", action="store", dest="password", help="MySQL password")
-    parser.add_argument("-d", "--database", action="store", dest="database", help="Name of MySQL specify database")
+    parser.add_argument("-u","--username", action="store", dest ="username", help="MySQL username", required=True)
+    parser.add_argument("-p", "--password", action="store", dest="password", help="MySQL password",required= True)
+    parser.add_argument("-d", "--database", action="store", dest="database", help="Name of MySQL specify database", required=True)
     parser.add_argument("--show", action= "store_true", dest="show", help= "Print attachments to be deleted to screen")
     parser.add_argument("--delete",action="store_true",dest="delete", help= "Delete attachments")
+    parser.add_argument("--report", action="store_true",dest="report", default=True, help="(default) Creates report of attachmentIDs that will be deleted")
     args = parser.parse_args()
     username = args.username
     password = args.password
     database = args.database
     show = args.show
     delete = args.delete
+    report= args.report
     try:
         db = pymysql.connect("localhost", username, password, database)
     except pymysql.err.OperationalError:
-        print('Error connecting to database, try again')
-        return
+        return print('Error connecting to database, try again')
     attachments = select_attachments(db)
-    file_name = "AttachmentsToDelete[%s]" % (datetime.date.today())
-    save_report(file_name,attachments)
     if show:
         for image in attachments:
             print(image[0])
@@ -71,6 +65,14 @@ def main():
             delete_attachments(db,attachments)
         except pymysql.err.DatabaseError:
             print("Error when trying to delete attachment links")
+    if report:
+        file_name = "AttachmentsToDelete[%s]" % (datetime.date.today())
+        heading = ["Attachment ID"]
+        write_report(file_name, heading, attachments)
+        if not delete:
+            print("No changes made, report of attachmentIDs to be deleted saved as %s.csv" % file_name)
+            return print("See -h for more options")
+        return print("Report saved as '%s.csv'" % file_name)
 
 if __name__ == "__main__":
     main()
