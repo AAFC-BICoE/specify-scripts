@@ -12,10 +12,10 @@ def fetch_ranks(db, db_table):
     return db_rank_id.fetchall()
 
 # selects all records with a certain rankID and puts them in a dictionary
-def rank_dict(db,db_columns,db_table):
+def rank_dict(db,db_columns,db_table,db_ranks):
     rank_records_dict = {}
     db_record_info = db.cursor()
-    for iD in fetch_ranks(db,db_table):
+    for iD in db_ranks:
         db_record_info.execute("SELECT %s FROM %s WHERE RankID = %s" %(db_columns,db_table,iD[0]))
         rank_records_dict[iD[0]] = db_record_info.fetchall()
     return rank_records_dict
@@ -39,6 +39,15 @@ def add_to_dict(dictionary,key,value):
     else:
         dictionary[key]=[value]
     return dictionary
+
+# calls on function to add to dict with parameters chosen according to what the author is for each record
+def check_author(dictionary, name, author, tid):
+    if author is None:
+        return add_to_dict(dictionary, (name, author), (tid, author))
+    elif (author[0] != '(') and (author != '['):
+        return add_to_dict(dictionary, (name, author[0]), (tid, author))
+    return add_to_dict(dictionary, (name, author[1]), (tid, author))
+
 
 # builds tree by searching for relationships between existing childID's and new parentID's within the tree without any
 # restrictions on numbers in names
@@ -82,3 +91,5 @@ def build_tree_without_nums(rank_records_dict,author_toggle):
                         b = tree[record[0]][2]
                         add_node_without_author(record[1], record[2], record[0], b,tree)
     return tree
+
+
