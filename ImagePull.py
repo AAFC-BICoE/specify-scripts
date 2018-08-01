@@ -105,7 +105,7 @@ def csv_search(source,destination,csv_file,show):
     found_images = [configure(os.path.basename(file)) for file in image_paths]
     if show:
         display(found_images)
-    if copy_files(image_paths,destination):
+    if copy_files(image_paths,destination) is False:
         return
     not_found = [[image] for image in csv_list if configure(image) not in found_images]
     if len(not_found) != 0:
