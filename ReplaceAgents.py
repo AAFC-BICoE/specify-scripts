@@ -7,10 +7,7 @@ actually preform the changes if '--replace' is added to the command line argumen
 NOTE: csv format should have the GUID of the agent to be deleted FIRST, then the GUID of the agent that the info will be
 changed to SECOND in the same row
 """
-import pymysql
-import argparse
-import csv
-import datetime
+import pymysql, argparse, csv, datetime, sys
 from csvwriter import write_report
 
 # selects agentIDs corresponding to provided GUID's
@@ -35,7 +32,7 @@ def update_agents(guid_list,agent_references,db,show):
                 db_update.execute("UPDATE %s SET %s = %s WHERE %s = %s"
                                % (column_name[0],column_name[1],good_agent,column_name[1],bad_agent))
             db_delete.execute("DELETE FROM agent WHERE AgentID = %s" % bad_agent)
-           # db.commit()
+            db.commit()
             print("Agent replaced")
         except IndexError:
            print("Agent GUID set: ",agent," not found in database" )
@@ -71,17 +68,17 @@ def main():
         return print("%s not found" % file_name)
     db_foreign_keys.execute("SELECT TABLE_NAME, COLUMN_NAME FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE "
                        "WHERE CONSTRAINT_SCHEMA = 'specify' AND REFERENCED_COLUMN_NAME LIKE '%AgentID%'")
-    if replace:
-        agent_list =update_agents(guid_list,db_foreign_keys.fetchall(),db,show)
     if report:
         name = "AgentsReplaced[%s]" % (datetime.date.today())
         heading = ["Removed AgentID", "AgentID"]
+        if replace:
+            agent_list = update_agents(guid_list, db_foreign_keys.fetchall(), db, show)
+            write_report(name, heading, agent_list)
+            print("Report saved as %s.csv" % name)
         if not replace:
             write_report(name, heading, guid_list)
             print("No changes made, report of agent GUIDS saved as %s.csv " % name)
             return print("See -h to see more options")
-        write_report(name, heading, agent_list)
-        print("Report saved as %s.csv" % name)
 
 if __name__ == "__main__":
     main()
