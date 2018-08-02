@@ -7,21 +7,15 @@ is created and then destroyed.
 import unittest, csvwriter, os, csv
 
 class WriteReport(unittest.TestCase):
-    """
-    Testing the write_report function form the csvwriter module
-    """
+    """ Testing the write_report function form the csvwriter module  """
     def test_file_exists(self):
-        """
-        tests that a csv file with the file name does not already exist
-        """
+        """ tests that a csv file with the file name does not already exist """
         test_file_name =  "test"
         result = os.path.exists("%s.csv" % test_file_name)
         self.assertFalse(result)
 
     def test_file_create(self):
-        """
-        tests that a csv is created
-        """
+        """ tests that a csv is created """
         test_file_name = "test"
         test_heading = ["test"]
         test_data = ["a", "b", "c"]
@@ -31,9 +25,7 @@ class WriteReport(unittest.TestCase):
         self.assertTrue(result)
 
     def test_in_file(self):
-        """
-        tests that a test object passed in, is in the csv file
-        """
+        """ tests that a test object passed in, is in the csv file """
         test_file_name = "test"
         test_heading = ["test"]
         test_data = ["a", "b", "c"]
@@ -50,9 +42,7 @@ class WriteReport(unittest.TestCase):
         self.assertTrue(result)
 
     def test_is_not_in_file(self):
-        """
-        tests that a test object is not in the csv file
-        """
+        """ tests that a test object is not in the csv file """
         test_file_name = "test"
         test_heading = ["test"]
         test_data = ["a", "b", "c"]
