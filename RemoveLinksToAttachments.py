@@ -1,15 +1,12 @@
 """
-Redmine Support #4173
-Removes all attachments and references/links to attachments from the schema by selecting ID's from collection objects
-with attachments and selecting all tables where attachments are referenced. Then, uses the ID's to delete the
-references from the tables and finally deleting from the attachment table itself. Defaults to saving a file of the
-attachmentID's to be deleted (with timestamp in filename), supports option to print the attachmentIDs to be deleted to
-screen. Defaults to not actually deleting the attachments unless prompted with --delete argument .
+Removes all references to image/jpeg MimeTypes from the schema by selecting attachmentID's from collection objects
+referencing a image/jpeg. Then, uses the ID's to delete entries from the referenced tables, then deletes the entry from
+the attachment table. Defaults to saving a file of the attachmentID's to be deleted (with timestamp in filename), unless
+prompted to delete with --delete argument. If any conflicts are found while attempting to delete, a report of the
+conflicts is created (with timestamp in filename). Supports option to print the attachmentIDs to be deleted to screen.
 """
-import pymysql
+import pymysql, argparse, datetime
 from csvwriter import write_report
-import argparse
-import datetime
 
 # selects AttachmentIDs that reference a collection object and are of image/jpeg type
 def select_attachments(db):
@@ -26,15 +23,19 @@ def select_references(db):
     return db_reference.fetchall()
 
 # deletes any entry that references the attachmentID, then deletes attachmentID from the schema, handles any conflicts
-def delete_attachments(db,attachments):
+def delete_attachments(db,referenced_tables,attachments):
     db_delete_reference = db.cursor()
     db_delete_attachment = db.cursor()
+    conflicts = []
     for record in attachments:
-        for table in select_references(db):
-            db_delete_reference.execute("DELETE FROM %s WHERE AttachmentID = %s" % (table[0], record[0]))
-        db_delete_attachment.execute("DELETE FROM attachment WHERE AttachmentID = %s" % record[0])
-        db.commit()
-    print("%s attachments deleted" % len(attachments))
+        try:
+            for table in referenced_tables:
+                db_delete_reference.execute("DELETE FROM %s WHERE AttachmentID = %s" % (table[0], record[0]))
+            db_delete_attachment.execute("DELETE FROM attachment WHERE AttachmentID = %s" % record[0])
+            db.commit()
+        except:
+            conflicts += [record[0]]
+    return conflicts
 
 # calls on functions and creates argument parser commands
 def main():
@@ -44,7 +45,8 @@ def main():
     parser.add_argument("-d", "--database", action="store", dest="database", help="Name of MySQL specify database", required=True)
     parser.add_argument("--show", action= "store_true", dest="show", help= "Print attachments to be deleted to screen")
     parser.add_argument("--delete",action="store_true",dest="delete", help= "Delete attachments")
-    parser.add_argument("--report", action="store_true",dest="report", default=True, help="(default) Creates report of attachmentIDs that will be deleted")
+    parser.add_argument("--report", action="store_true",dest="report", default=True,
+                        help="(default) Creates report of attachmentIDs that will be deleted")
     args = parser.parse_args()
     username = args.username
     password = args.password
@@ -61,16 +63,22 @@ def main():
         for image in attachments:
             print(image[0])
     if delete:
-        try:
-            delete_attachments(db,attachments)
-        except pymysql.err.DatabaseError:
-            print("Error when trying to delete attachment links")
+        referenced_tables = select_references(db)
+        conflicts = delete_attachments(db,referenced_tables,attachments)
+        if len(conflicts) == 0:
+            print("%s conflicts, %s attachments deleted" % (len(conflicts), len(attachments)))
+        else:
+            print( "%s conflicts, %s attachments deleted" % ((int(len(attachments)) - int(len(conflicts))), len(attachments)))
+            file_name = "AttachmentConflicts[%s]" % (datetime.date.today())
+            heading = ["Attachment ID"]
+            write_report(file_name, heading, conflicts)
+            print("Report saved as %s.csv" % file_name)
     if report:
         file_name = "AttachmentsToDelete[%s]" % (datetime.date.today())
         heading = ["Attachment ID"]
         write_report(file_name, heading, attachments)
         if not delete:
-            print("No changes made, report of attachmentIDs to be deleted saved as %s.csv" % file_name)
+            print("No changes made, report of %s attachmentIDs to be deleted saved as %s.csv" % (len(attachments),file_name))
             return print("See -h for more options")
         return print("Report saved as '%s.csv'" % file_name)
 
