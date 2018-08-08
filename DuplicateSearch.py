@@ -1,11 +1,11 @@
 """
-Redmine Support #12463,#12202,#12464. #12204
 Using command line arguments, builds a tree from a table (geography or taxon) and searches for duplicate names within
 a passed in rank. A report of the duplicates is saved in a csv file with a time stamped name. If searching in the
 taxon tree, only matching names with matching author first letters are flagged. If the optional argument 'locality' is
 specified then a case insensitive search of locality names is preformed via geographyID. Note, rankID refers to the
 level of subtree that will be searched within, ie if in the geography table, rankid=200 is the country subtree, tree
-will be searched for duplicates within the same country.
+will be searched for duplicates within the same country. Searches performed in the taxon tree are case sensitive, and
+searches performed in the geography tree are case insensitive
 """
 import pymysql, argparse, datetime, itertools
 from anytree import PreOrderIter
@@ -13,6 +13,7 @@ from csvwriter import write_report
 from specifytreebuilder import rank_dict, build_tree_with_nums, build_tree_without_nums,fetch_ranks, check_author
 
 # searches and updates the node dictionary if duplicates are found, searches by locality if specified
+# case INSENSITIVE
 def find_geography_duplicates(db,locality_toggle,node_dict, name):
     db_locality_info = db.cursor()
     if locality_toggle:
@@ -29,6 +30,15 @@ def find_geography_duplicates(db,locality_toggle,node_dict, name):
         node_dict[name[0].lower()] = [name[1]]
     return node_dict
 
+# searches and updates the level dictionary if duplicates with the same name and author first letter are found
+# case SENSITIVE
+def find_taxon_duplicates(name, level_dict):
+    if (name[2] is None) or (name[2] == ""):
+        level_dict = check_author(level_dict, name[0], None, name[1])
+    else:
+        level_dict = check_author(level_dict, name[0], name[2], name[1])
+    return level_dict
+
 # searches each rank 'subtree' in the geography table/locality table (if specified), creates dict, returns duplicates
 def search_tree_geography(db,rank_records_dict,tree, rank,locality_toggle):
     rank_level = rank_records_dict[rank]
@@ -42,20 +52,18 @@ def search_tree_geography(db,rank_records_dict,tree, rank,locality_toggle):
                 data.append((nodelvl[1], key, str(node_dict[key])))
     return data
 
-# searches for matching full names with the same first letter of author within the same rank
+# searches each rank 'subtree', returns formatted duplicate data list
 def search_tree_taxon(rank_records_dict,tree, rank):
-    result_data = []
+    data = []
     rank_level = rank_records_dict[rank]
     for level in rank_level:
         level_dict = {}
         for name in [node.name for node in PreOrderIter(tree[level[2]][2])]:
-            if (name[2] is None) or (name[2] == ""):
-                level_dict = check_author(level_dict,name[0],None,name[1])
-            else:
-                level_dict = check_author(level_dict,name[0],name[2],name[1])
-        result_data+=[(level[1],key[0],str([i[1] for i in level_dict[key]]), str([j[0] for j in level_dict[key]]))
-                      for key in level_dict if len(level_dict[key]) > 1]
-    return result_data
+            level_dict = find_taxon_duplicates(name, level_dict)
+        for key in level_dict:
+            if len(level_dict[key]) > 1:
+                data.append(((level[1]),key[0],str([i[1] for i in level_dict[key]]),str([j[0] for j in level_dict[key]])))
+    return data
 
 # writes report with timestamp
 def report(headings,result_data,show):
