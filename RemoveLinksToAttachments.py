@@ -28,13 +28,19 @@ def delete_attachments(db,referenced_tables,attachments):
     db_delete_attachment = db.cursor()
     conflicts = []
     for record in attachments:
-        try:
-            for table in referenced_tables:
+        for table in referenced_tables:
+            try:
                 db_delete_reference.execute("DELETE FROM %s WHERE AttachmentID = %s" % (table[0], record[0]))
+            except pymysql.err.IntegrityError:
+                # will be thrown if a foreign key constraint fails
+                conflicts += [record[0]]
+                continue
+        try:
             db_delete_attachment.execute("DELETE FROM attachment WHERE AttachmentID = %s" % record[0])
             db.commit()
-        except:
-            conflicts += [record[0]]
+        except pymysql.err.IntegrityError:
+            # will be thrown if a foreign key constraint fails
+            continue
     return conflicts
 
 # calls on functions and creates argument parser commands
@@ -74,7 +80,10 @@ def main():
             write_report(file_name, heading, conflicts)
             print("Report saved as %s.csv" % file_name)
     if report:
-        file_name = "AttachmentsToDelete[%s]" % (datetime.date.today())
+        if delete:
+            file_name = "AttachmentsDeleted[%s]"  % (datetime.date.today())
+        else:
+            file_name = "AttachmentsToDelete[%s]" % (datetime.date.today())
         heading = ["Attachment ID"]
         write_report(file_name, heading, attachments)
         if not delete:
