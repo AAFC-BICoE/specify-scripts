@@ -7,40 +7,43 @@ specified then a case insensitive search of locality names is preformed via geog
 level of subtree that will be searched within, ie if in the geography table, rankid=200 is the country subtree, tree
 will be searched for duplicates within the same country.
 """
-import pymysql
-import argparse
-import datetime
+import pymysql, argparse, datetime, itertools
 from anytree import PreOrderIter
 from csvwriter import write_report
-import itertools
 from specifytreebuilder import rank_dict, build_tree_with_nums, build_tree_without_nums,fetch_ranks, check_author
 
-# searches each country 'subtree' for matching names in the geography table, or the locality table if specified
-def search_tree_country(db,rank_records_dict,tree, rank,locality_toggle):
-    countries = rank_records_dict[rank]
-    data = []
+# searches and updates the node dictionary if duplicates are found, searches by locality if specified
+def find_geography_duplicates(db,locality_toggle,node_dict, name):
     db_locality_info = db.cursor()
-    for country in countries:
-        country_dict = {}
-        for name in [node.name for node in PreOrderIter((tree[country[2]][2]))]:
-            if locality_toggle:
-                db_locality_info.execute("SELECT LocalityName,LocalityID FROM locality WHERE GeographyID=%s" % name[1])
-                for locality in db_locality_info.fetchall():
-                    if locality[0].lower() in country_dict:
-                        country_dict[locality[0].lower()].append(locality[1])
-                    else:
-                        country_dict[locality[0].lower()] = [locality[1]]
-            if name[0] in country_dict:
-                country_dict[name[0]].append(name[1])
+    if locality_toggle:
+        db_locality_info.execute("SELECT LocalityName,LocalityID FROM locality WHERE GeographyID = '%s'" % name[1])
+        for locality in  db_locality_info.fetchall():
+            if locality[0].lower() in node_dict:
+                node_dict[locality[0].lower()].append(locality[1])
             else:
-                country_dict[name[0]] = [name[1]]
-        for key in country_dict:
-            if len(country_dict[key]) > 1:
-                data.append((country[1],key,str(country_dict[key])))
+                node_dict[locality[0].lower()] = [locality[1]]
+        return node_dict
+    if name[0] in node_dict:
+        node_dict[name[0].lower()].append(name[1])
+    else:
+        node_dict[name[0].lower()] = [name[1]]
+    return node_dict
+
+# searches each rank 'subtree' in the geography table/locality table (if specified), creates dict, returns duplicates
+def search_tree_geography(db,rank_records_dict,tree, rank,locality_toggle):
+    rank_level = rank_records_dict[rank]
+    data = []
+    for nodelvl in rank_level:
+        node_dict = {}
+        for name in [node.name for node in PreOrderIter((tree[nodelvl[2]][2]))]:
+            node_dict = find_geography_duplicates(db, locality_toggle,node_dict,name)
+        for key in node_dict:
+            if len(node_dict[key]) > 1:
+                data.append((nodelvl[1], key, str(node_dict[key])))
     return data
 
 # searches for matching full names with the same first letter of author within the same rank
-def search_tree_author(rank_records_dict,tree, rank):
+def search_tree_taxon(rank_records_dict,tree, rank):
     result_data = []
     rank_level = rank_records_dict[rank]
     for level in rank_level:
@@ -69,7 +72,7 @@ def taxon(db,table,rank_ids,rank,show):
     rank_dictionary = rank_dict(db, columns, table, rank_ids)
     tree = build_tree_without_nums(rank_dictionary, True)
     try:
-        result_data = search_tree_author(rank_dictionary, tree, rank)
+        result_data = search_tree_taxon(rank_dictionary, tree, rank)
     except KeyError:
         return print("Invalid rank")
     headings = ["Rank Name", "Duplicate Full Name", "Authors", "TaxonIDs"]
@@ -81,7 +84,7 @@ def geography(db,table,rank_ids,rank,show,toggle):
     rank_dictionary = rank_dict(db, columns, table, rank_ids)
     tree = build_tree_with_nums(rank_dictionary,False)
     try:
-        result_data = search_tree_country(db,rank_dictionary,tree,rank,toggle)
+        result_data = search_tree_geography(db,rank_dictionary,tree,rank,toggle)
     except KeyError:
         return print("Invalid rank")
     headings = ["Country Name", "Duplicate Geography Full Name", "Geography IDs"]
