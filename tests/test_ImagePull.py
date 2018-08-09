@@ -1,6 +1,7 @@
 """ Tests the ImagePull script across 16 different cases.
 **NOTE: Some operating systems name metadata tags differently, some test functions have the dictionary 'system_names'
-VALUES changed to what the particular OS calls the fields 'subject' and 'tags'.***
+VALUES changed to what the particular OS calls the fields 'subject' and 'tags'.
+Image 01-01000489870.JPG is to be used with this script for testing with metadata ***
 """
 import unittest, ImagePull, os, csv, datetime
 
