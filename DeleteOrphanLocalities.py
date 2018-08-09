@@ -1,5 +1,4 @@
 """
-Redmine Support #12199
 Deletes localities that are not attached to any collectionobject by selecting the orphan localityID's then updating any
 references of the localityID in the schema to NULL, then deletes the locality from schema. Defaults to saving a file of
 the locality ID's to be deleted (with timestamp in filename) and supports option to print locality ID's to scree.
