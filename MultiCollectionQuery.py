@@ -1,18 +1,15 @@
-"""
-Redmine Feature #6046
-Searches for records across all collections within the schema that match restrictions of the arguments passed in from
-command line. Using a MySQL statement that joins the required tables and a formatted list of the command line arguments,
-returns a list of  records that satisfy the arguments along with the records's CatalogNumber, DAO Accession Number,
-CollectionName, Collector LastName, Taxon FullName, Geography and Year collected. This data is then written to a csv
-file with a time stamped file name. If there are no records found or no arguments passed in, no csv file is created.
-"""
-import pymysql
-import argparse
-import datetime
-import itertools
+# Searches for records across all collections within the schema that match restrictions of the arguments passed in from
+# Command line. Using a MySQL statement that joins the required tables and a formatted list of the command line
+# Arguments, returns a list of  records that satisfy the arguments along with the records's CatalogNumber, DAO Accession
+# Number, CollectionName, Collector LastName, Taxon FullName, Geography and Year collected. This data is then written to
+# A csv file with a time stamped file name. If there are no records found and/or no arguments passed in, no csv file is
+# Created.
+import pymysql, argparse, datetime, itertools
 from csvwriter import write_report
 
-# formats records with multiple collectors to be only displayed once and counts the number of distinct catalog numbers
+# Formats records with multiple collectors to be only displayed once by searching for matching existing entries that
+# Do not have the same collector (record[3]) and are part of the same collection (record[2]). Also returns the number of
+# Distinct catalog numbers
 def format_records(query_data):
     raw_data = {}
     catalog_nums = []
@@ -27,11 +24,11 @@ def format_records(query_data):
     clean_data = [[y for x in raw_data[value] for y in x] for value in raw_data]
     return clean_data,len(catalog_nums)
 
-# selects all required columns from schema using the formatted restrictions on the data
+# Selects all required columns from schema using the formatted restrictions on the data
 def fetch_info(db, restriction_list):
     db_fetch_records = db.cursor()
     db_fetch_records.execute("SELECT CO.CatalogNumber,CO.AltCatalogNumber,CL.CollectionName,A.LastName,T.Fullname,"
-                             "G.FullName,YEAR(CE.StartDate) FROM collectionobject CO "
+                             "G.FullName,CE.StartDate FROM collectionobject CO "
                              "INNER JOIN collection CL ON CL.CollectionID=CO.CollectionID "
                              "INNER JOIN collectingevent CE ON CE.CollectingEventID=CO.CollectingEventID "
                              "INNER JOIN collector C ON C.CollectingEventID=CE.CollectingEventID "
@@ -43,20 +40,20 @@ def fetch_info(db, restriction_list):
                              "WHERE %s" % restriction_list)
     return format_records(db_fetch_records.fetchall())
 
-# configures data restrictions into a statement that MySQL is able to interpret
-def format_args(db,catalognum,dao,lastname,taxon,year,province):
+# Configures data restrictions into a statement that MySQL is able to interpret
+def format_args(catalognum,dao,lastname,taxon,year,province):
     input_list = [("CO.CatalogNumber LIKE '%s' ",catalognum),("CO.AltCatalogNumber LIKE '%s' ",dao),
                   ("A.LastName LIKE '%s%s%s' ",('%',lastname,'%')),("T.FullName LIKE '%s' ",taxon),
-                  ("YEAR(CE.StartDate) LIKE '%s' ",year),("G.FullName LIKE '%s%s%s' ",('%',province,'%'))]
+                  ("YEAR(CE.StartDate) LIKE '%s' ", year),("G.FullName LIKE '%s%s%s' ",('%',province,'%'))]
     statement_list = list((field[0] % field[1] + "AND ") for field in input_list if field[1] != "")
     formatted_list =(("".join(statement_list))[:-4])
-    return fetch_info(db,formatted_list)
+    return formatted_list
 
-# saves the results of the query to a csv file with a time stamped file name
+# Saves the results of the query to a csv file with a time stamped file name
 def save_to_file(data_list,show):
     file_name = "QueryReport[%s]" % (datetime.date.today())
     headings = ["Catalog Number", "DAO Accession Number", "Collection", "Collector Last Name(s)", "Taxon Name",
-                "Geography", "Year Collected"]
+                "Geography", "Date Collected"]
     write_report(file_name,headings,data_list[0])
     if show:
         for row in data_list[0]:
@@ -64,7 +61,7 @@ def save_to_file(data_list,show):
     print("%s records found | %s distinct catalog numbers" % (len(data_list[0]),data_list[1]))
     print("Report saved as %s.csv" % file_name)
 
-# creates initial window and tab where search fields are input
+# Creates command line arguments and coordinates function calling
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("-u", "--username", action="store", dest="username", help="MySQL username", required=True)
@@ -103,7 +100,8 @@ def main():
     if not (catnum or dao or lastname or taxon or year or province):
         return print("Must enter at least one argument, see -h for more options")
     if report:
-        data_list = format_args(db,catnum,dao,lastname,taxon,year,province)
+        format_list = format_args(catnum,dao,lastname,taxon,year,province)
+        data_list = fetch_info(db,format_list)
         if len(data_list[0]) == 0:
             return print("No records found")
         return save_to_file(data_list,show)
