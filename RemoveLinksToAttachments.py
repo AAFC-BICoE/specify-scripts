@@ -23,23 +23,24 @@ def select_references(db):
     return db_reference.fetchall()
 
 # deletes any entry that references the attachmentID, then deletes attachmentID from the schema, handles any conflicts
-def delete_attachments(db,referenced_tables,attachments):
+def delete_attachments(db,referenced_tables,attachments, exception):
     db_delete_reference = db.cursor()
     db_delete_attachment = db.cursor()
     conflicts = []
     for record in attachments:
         for table in referenced_tables:
             try:
-                db_delete_reference.execute("DELETE FROM %s WHERE AttachmentID = %s" % (table[0], record[0]))
-            except pymysql.err.IntegrityError:
+                db_delete_reference.execute("DELETE FROM %s WHERE AttachmentID = '%s'" % (table[0], record[0]))
+            except exception:
                 # will be thrown if a foreign key constraint fails
                 conflicts += [record[0]]
                 continue
         try:
-            db_delete_attachment.execute("DELETE FROM attachment WHERE AttachmentID = %s" % record[0])
+            db_delete_attachment.execute("DELETE FROM attachment WHERE AttachmentID = '%s'" % record[0])
             db.commit()
-        except pymysql.err.IntegrityError:
+        except exception:
             # will be thrown if a foreign key constraint fails
+            conflicts += [record[0]]
             continue
     return conflicts
 
@@ -60,6 +61,7 @@ def main():
     show = args.show
     delete = args.delete
     report= args.report
+    exception = pymysql.err.IntegrityError
     try:
         db = pymysql.connect("localhost", username, password, database)
     except pymysql.err.OperationalError:
@@ -70,7 +72,7 @@ def main():
             print(image[0])
     if delete:
         referenced_tables = select_references(db)
-        conflicts = delete_attachments(db,referenced_tables,attachments)
+        conflicts = delete_attachments(db,referenced_tables,attachments,exception)
         if len(conflicts) == 0:
             print("%s conflicts, %s attachments deleted" % (len(conflicts), len(attachments)))
         else:
