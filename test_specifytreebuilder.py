@@ -2,7 +2,10 @@
 Tests the specifytreebuilder module for 12 different cases. Case descriptions can be found in specific functions.
 For those that require a database, a sample database is created, populated, and destroyed for each instance.
 """
-import specifytreebuilder, os, test_db, sqlite3, unittest
+import specifytreebuilder
+import os
+import sqlite3
+import unittest
 
 class TestDatabase(unittest.TestCase):
 
