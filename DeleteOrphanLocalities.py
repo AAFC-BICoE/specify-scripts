@@ -25,6 +25,8 @@ def orphan_ids(db):
 
 # Sets any references to the orphan locality in the database to NULL then deletes the orphan locality record, if
 # Conflicts occur due to foreign_key restrictions, the localityID is added to the conflict list
+# Takes integrity_error as parameter - either sqlite3 exception (testing) or
+# mymysql exception (production)
 def delete_orphans(db,orphans, referenced_tables, integrity_error):
     db_remove_reference = db.cursor()
     db_delete = db.cursor()
