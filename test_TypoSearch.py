@@ -30,7 +30,8 @@ class TestTypoSearch(unittest.TestCase):
         test_name2 = ("testname3", 456, "test")
         test_result_data = []
         test_data = ["","taxonname"]
-        actual = TypoSearch.find_taxon_typos(test_name1,test_name2,test_result_data,test_data)
+        test_typo = 2
+        actual = TypoSearch.find_taxon_typos(test_name1, test_name2, test_result_data, test_data, test_typo)
         expected = [("taxonname","testname","testname3","(testAuthor)","test",123,456,1)]
         self.assertListEqual(expected,actual)
 
@@ -41,7 +42,8 @@ class TestTypoSearch(unittest.TestCase):
         test_name2 = ("testname3", 456, "test")
         test_result_data = []
         test_data = ["", "taxonname"]
-        actual = TypoSearch.find_taxon_typos(test_name1, test_name2, test_result_data, test_data)
+        test_typo = 2
+        actual = TypoSearch.find_taxon_typos(test_name1, test_name2, test_result_data, test_data, test_typo)
         expected = []
         self.assertListEqual(expected, actual)
 
@@ -52,7 +54,8 @@ class TestTypoSearch(unittest.TestCase):
         test_name2 = ("testname3", 456, "[test]")
         test_result_data = []
         test_data = ["","taxonname"]
-        actual = TypoSearch.find_taxon_typos(test_name1,test_name2,test_result_data,test_data)
+        test_typo = 2
+        actual = TypoSearch.find_taxon_typos(test_name1,test_name2,test_result_data,test_data, test_typo)
         expected = [("taxonname","testname","testname3","testAuthor","[test]",123,456,1)]
         self.assertListEqual(expected,actual)
 
@@ -63,7 +66,8 @@ class TestTypoSearch(unittest.TestCase):
         test_name2 = ("testname3", 456, "(test)")
         test_result_data = []
         test_data = ["", "taxonname"]
-        actual = TypoSearch.find_taxon_typos(test_name1, test_name2, test_result_data, test_data)
+        test_typo = 2
+        actual = TypoSearch.find_taxon_typos(test_name1, test_name2, test_result_data, test_data, test_typo)
         expected = []
         self.assertListEqual(expected, actual)
 
@@ -74,7 +78,8 @@ class TestTypoSearch(unittest.TestCase):
         test_name2 = ("testname3", 456, "test")
         test_result_data = []
         test_data = ["", "taxonname"]
-        actual = TypoSearch.find_taxon_typos(test_name1, test_name2, test_result_data, test_data)
+        test_typo = 2
+        actual = TypoSearch.find_taxon_typos(test_name1, test_name2, test_result_data, test_data, test_typo)
         expected = [("taxonname", "testname", "testname3", "testAuthor", "test", 123, 456, 1)]
         self.assertListEqual(expected, actual)
 
@@ -85,7 +90,8 @@ class TestTypoSearch(unittest.TestCase):
         test_name2 = ("testname3", 456, "test")
         test_result_data = []
         test_data = ["", "taxonname"]
-        actual = TypoSearch.find_taxon_typos(test_name1, test_name2, test_result_data, test_data)
+        test_typo = 2
+        actual = TypoSearch.find_taxon_typos(test_name1, test_name2, test_result_data, test_data, test_typo)
         expected = []
         self.assertListEqual(expected, actual)
 
@@ -96,7 +102,8 @@ class TestTypoSearch(unittest.TestCase):
         test_name2 = ("testname3", 456, None)
         test_result_data = []
         test_data = ["", "taxonname"]
-        actual = TypoSearch.find_taxon_typos(test_name1, test_name2, test_result_data, test_data)
+        test_typo = 2
+        actual = TypoSearch.find_taxon_typos(test_name1, test_name2, test_result_data, test_data, test_typo)
         expected = [("taxonname","testname","testname3", None, None, 123, 456, 1)]
         self.assertListEqual(expected, actual)
 
@@ -107,26 +114,28 @@ class TestTypoSearch(unittest.TestCase):
         test_name2 = ("horse", 456, None)
         test_result_data = []
         test_data = ["", "taxonname"]
-        actual = TypoSearch.find_taxon_typos(test_name1, test_name2, test_result_data, test_data)
+        test_typo = 2
+        actual = TypoSearch.find_taxon_typos(test_name1, test_name2, test_result_data, test_data, test_typo)
         expected = []
         self.assertListEqual(expected, actual)
 
     def test_find_geography_typos_positive(self):
-        # Tests to confirm that the correct list is returned when geography names that have a LD of 1 or 2 are passed in
+        # Tests to confirm that the correct list is returned when geography names that have a LD of <=2 are passed in
         test_name_list = [(("test",123),("test1",456))]
         test_result_data = []
         test_data = ("","geographyname")
-        actual = TypoSearch.find_geography_typos(test_name_list,test_result_data,test_data)
+        test_typo = 2
+        actual = TypoSearch.find_geography_typos(test_name_list,test_result_data,test_data,test_typo)
         expected = [("geographyname","test","test1",123,456,1)]
         self.assertListEqual(expected,actual)
 
     def test_find_geography_typos_negative(self):
-        # Tests to confirm that an empty list is returned when geography names that have a LD not equal to 1 or 2 are
-        # Passed in
+        # Tests to confirm that an empty list is returned when geography names that have a LD not <=2 are passed in
         test_name_list = [(("cat",123),("horse",456))]
         test_result_data = []
         test_data = ("","geographyname")
-        actual = TypoSearch.find_geography_typos(test_name_list,test_result_data,test_data)
+        test_typo = 2
+        actual = TypoSearch.find_geography_typos(test_name_list,test_result_data,test_data, test_typo)
         expected = []
         self.assertListEqual(expected,actual)
 
