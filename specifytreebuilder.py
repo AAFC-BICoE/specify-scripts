@@ -1,5 +1,5 @@
 """ Builds trees for data in tables that have a parent/child relationship within the specify
-MySQL schema. Supports tree building for data that includes/ does not include numbers (to avoid
+MySQL schema. Supports tree building for data that includes/does not include numbers (to avoid
 trivial typos), and data that does/does not include an author relationship."""
 from anytree import Node
 
