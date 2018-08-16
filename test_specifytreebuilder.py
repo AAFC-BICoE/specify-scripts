@@ -1,4 +1,6 @@
-"""Tests the specifytreebuilder module across 12 cases. Creates and deletes a test database."""
+"""
+12 different test methods for the specifytreebuilder.py module.
+"""
 import os
 import sqlite3
 import unittest
@@ -6,7 +8,7 @@ from anytree import Node
 import specifytreebuilder
 
 class TestDatabase(unittest.TestCase):
-    """ Creates test database to use for testing the specifytreebuilder.py script."""
+    # Tests the specifytreebuilder.py module, creates and deletes a test database
 
     def setUp(self):
         # Creates the test database and a test table, inserts sample data into test table
@@ -26,14 +28,14 @@ class TestDatabase(unittest.TestCase):
         os.remove("specifytest.db")
 
     def test_selecting_rank(self):
-        # Tests to confirm the fetch_ranks function selects & returns the correct list
+        # Confirms the fetch_ranks function selects and returns the correct RankID's
         conn = sqlite3.connect("specifytest.db")
         actual = specifytreebuilder.fetch_ranks(conn, "testranks")
         expected = [("1", ), ("2", ), ("3", )]
         self.assertListEqual(expected, actual)
 
     def test_rank_dict(self):
-        # Tests to confirm the dictionary created is returning the correct list
+        # Confirms the function returns the correct dictionary of RankID's
         conn = sqlite3.connect("specifytest.db")
         test_columns = "data1, data2"
         test_table = "testranks"
@@ -44,21 +46,21 @@ class TestDatabase(unittest.TestCase):
         self.assertDictEqual(expected, actual)
 
     def test_add_to_dict_in_dict(self):
-        # Tests to confirm that if a key exists in the dictionary, its value is appended
+        # Confirms if a key value already exists in the dictionary, the new value is appended
         test_dict = {"a": ["b", "c"], "d": ["e", "f"], "g": ["h", "i"]}
         actual = specifytreebuilder.add_to_dict(test_dict, "a", "j")
         expected = {"a": ["b", "c", "j"], "d": ["e", "f"], "g": ["h", "i"]}
         self.assertDictEqual(expected, actual)
 
     def test_add_to_dict_not_in_dict(self):
-        # Tests to confirm that if a key does not exist in the dictionary, it is created
+        # Confirms if a key does not exist in the dictionary, a new key/value entry is created
         test_dict = {"a": ["b", "c"], "d": ["e", "f"], "g": ["h", "i"]}
         actual = specifytreebuilder.add_to_dict(test_dict, "k", "j")
         expected = {"a": ["b", "c"], "d": ["e", "f"], "g": ["h", "i"], "k": ["j"]}
         self.assertDictEqual(expected, actual)
 
     def test_check_author_none(self):
-        # Tests to confirm that the check author function works if None is passed in as the author
+        # Confirms the check author function returns the expected dict with None as the author
         test_dictionary = {}
         test_name = "foo"
         test_author = None
@@ -68,7 +70,7 @@ class TestDatabase(unittest.TestCase):
         self.assertDictEqual(expected, actual)
 
     def test_check_author_brackets(self):
-        # Tests to confirm the correct dict is returned if the author first letter is a bracket
+        # Confirms the expected dictionary is returned when the author first letter is a bracket
         test_dictionary = {}
         test_name = "foo"
         test_author = "[bar]"
@@ -78,7 +80,7 @@ class TestDatabase(unittest.TestCase):
         self.assertDictEqual(expected, actual)
 
     def test_check_author_round_brackets_fail(self):
-        # Tests to confirm the correct dict is returned if the author first letters do not match
+        # Confirms the expected dictionary is returned if the author first letters do not match
         test_dictionary = {}
         test_name = "foo"
         test_author = "(bar)"
@@ -88,7 +90,7 @@ class TestDatabase(unittest.TestCase):
         self.assertNotEqual(expected, actual)
 
     def test_check_author_brackets_normal(self):
-        # Tests to confirm the correct dict is returned if the author first letters are letters
+        # Confirms the expected dictionary is returned if the author first letters are non matching
         test_dictionary = {}
         test_name = "foo"
         test_author = "bar"
@@ -98,7 +100,7 @@ class TestDatabase(unittest.TestCase):
         self.assertEqual(expected, actual)
 
     def test_build_tree_with_nums_with_author(self):
-        # Tests to confirm that tree building with author and numbers works properly
+        # Confirms the build_tree_with_nums method returns the expected dictionary
         test_dict = {"1": [('None', 'Life2', '1', 'test1')],
                      "4":[('1', 'Plantae4', '181107', 'test')]}
         author_toggle = True
@@ -110,7 +112,7 @@ class TestDatabase(unittest.TestCase):
         self.assertEqual(str(expected), str(actual))
 
     def test_build_tree_with_nums_without_author(self):
-        # Tests to confirm that tree building without author and with numbers works properly
+        # Confirms the build_tree_with_nums method returns the expected dictionary
         test_dict = {"1": [('None', 'Life2', '1', 'test1')],
                      "4": [('1', 'Plantae4', '181107', 'test')]}
         author_toggle = False
@@ -122,7 +124,7 @@ class TestDatabase(unittest.TestCase):
         self.assertEqual(str(expected), str(actual))
 
     def test_build_tree_without_nums_with_author(self):
-        # Tests to confirm that tree building with author and without numbers works properly
+        # Confirms the build_tree_without_nums method returns the expected dictionary
         test_dict = {"1": [('None', 'Life', '1', 'test1')],
                      "4": [('1', 'Plantae4', '181107', 'test')]}
         author_toggle = True
@@ -132,7 +134,7 @@ class TestDatabase(unittest.TestCase):
         self.assertEqual(str(expected), str(actual))
 
     def test_build_tree_without_nums_without_author(self):
-        # Tests to confirm that tree building with author and without numbers works properly
+        # Confirms the build_tree_without_nums method returns the expected dictionary
         test_dict = {"1": [('None', 'Life', '1', 'test1')],
                      "4": [('1', 'Plantae4', '181107', 'test')]}
         author_toggle = False

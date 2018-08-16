@@ -1,22 +1,24 @@
-# Removes all references to image/jpeg MimeTypes from the schema by selecting attachmentID's from
-# Collection objects referencing that MimeType. Uses the ID's to delete entries from the referenced
-# Tables then deletes the entry from the attachment table. Saves a file of the AttachmentID's to be
-# Deleted unless prompted to delete. A report of conflicts is created if any occur.
+"""
+Removes all references to image/jpeg MimeTypes from the schema by selecting AttachmentID's from
+referenced collection objects. Uses the ID's to delete entries from the tables referenced by
+foreign keys then deletes the entry from the attachment table. Saves a file of the AttachmentID's
+to be deleted unless prompted to delete. A report of conflicts is created if any occur.
+"""
 import argparse
 import datetime
 import pymysql
 from csvwriter import write_report
 
-# Selects AttachmentIDs that reference a collection object of image/jpeg MimeType
 def select_attachments(database):
+    # Selects AttachmentIDs that reference a collection object with image/jpeg MimeType
     database_attachments = database.cursor()
     database_attachments.execute("SELECT A.AttachmentID FROM collectionobjectattachment C "
                                  "INNER JOIN attachment A ON A.AttachmentID = C.AttachmentID "
                                  "WHERE A.MimeType LIKE 'image/jpeg'")
     return database_attachments.fetchall()
 
-# Selects tables that reference the column 'attachmentID' by foreign key
 def select_references(database):
+    # Selects tables that reference the column 'AttachmentID' by foreign key
     database_reference = database.cursor()
     database_reference.execute("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE "
                                "WHERE CONSTRAINT_SCHEMA='specify' "
@@ -24,8 +26,8 @@ def select_references(database):
                                "AND table_name != 'attachment'")
     return database_reference.fetchall()
 
-# Deletes entries that reference attachmentID columns, handles foreign key constraint conflicts
 def delete_attachments(database, referenced_tables, attachments, exception):
+    # Deletes entries that reference AttachmentID columns, handles foreign key constraint conflicts
     database_delete_reference = database.cursor()
     database_delete_attachment = database.cursor()
     conflicts = []
@@ -46,8 +48,8 @@ def delete_attachments(database, referenced_tables, attachments, exception):
             continue
     return conflicts
 
-# Creates command line arguments and coordinates function calls
 def main():
+    # Creates command line arguments and coordinates function calls
     parser = argparse.ArgumentParser()
     parser.add_argument("-u", "--username", action="store", dest="username",
                         help="MySQL username", required=True)
@@ -62,15 +64,12 @@ def main():
     parser.add_argument("--report", action="store_true", dest="report", default=True,
                         help="(default) Creates report of attachmentIDs that will be deleted")
     args = parser.parse_args()
-    username = args.username
-    password = args.password
-    database = args.database
     show = args.show
     delete = args.delete
     report = args.report
     exception = pymysql.err.IntegrityError
     try:
-        database = pymysql.connect("localhost", username, password, database)
+        database = pymysql.connect("localhost", args.username, args.password, args.database)
     except pymysql.err.OperationalError:
         return print('Error connecting to database, try again')
     attachments = select_attachments(database)

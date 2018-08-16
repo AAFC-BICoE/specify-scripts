@@ -1,16 +1,20 @@
-# Reading from a csv file containing two GUID's, the "Bad Agent" is deleted from the schema by
-# Changing references to the "Good Agent" GUID. Default is to not replace the agents unless
-# Prompted by the --replace argument. NOTE: csv format should have the GUID of the agent that will
-# Be deleted ("Bad Agent") in the FIRST column, and the GUID of the agent that references will be
-# Switched to ("Good Agent") in the SECOND column of the same row.
+"""
+Reading from a csv file containing two GUID's, the "Bad Agent" is deleted from the schema by
+changing references to the "Good Agent" GUID. Default is to not replace the agents unless prompted
+by the --replace argument.
+
+NOTE: csv format should have the GUID of the agent that will be deleted ("Bad Agent") in the FIRST
+column, and the GUID of the agent that references will be switched to ("Good Agent") in the SECOND
+column of the same row.
+"""
 import argparse
 import csv
 import datetime
 import pymysql
 from csvwriter import write_report
 
-# Selects the table and column names that reference AgentID by foreign key
 def foreign_keys(database):
+    # Selects the table and column names that reference AgentID by foreign key
     db_foreign_keys = database.cursor()
     db_foreign_keys.execute("SELECT TABLE_NAME, COLUMN_NAME FROM "
                             "INFORMATION_SCHEMA.KEY_COLUMN_USAGE "
@@ -18,15 +22,15 @@ def foreign_keys(database):
                             "AND REFERENCED_COLUMN_NAME LIKE '%AgentID%'")
     return db_foreign_keys.fetchall()
 
-# Selects AgentID's corresponding to GUID passed in
 def agent_info(database, guid):
+    # Selects AgentID corresponding to passed in GUID
     db_agent_id = database.cursor()
     db_agent_id.execute("SELECT AgentID FROM agent WHERE GUID = '%s'" % guid)
     return db_agent_id.fetchall()
 
-# Updates all instances of the "Bad Agent' to the "Good Agent", then deletes the Bad Agent. If
-# Any conflicts caused by foreign keys occur, conflicting ID's are added to a conflict list
 def update_agents(database, guid_list, agent_references, integrity_error):
+    # Updates all instances of the "Bad Agent' to the "Good Agent", then deletes the Bad Agent. If
+    # Any conflicts caused by foreign keys occur, ID's are added to a conflict list
     db_update = database.cursor()
     db_delete = database.cursor()
     agent_list, conflicts = [], []
@@ -48,8 +52,8 @@ def update_agents(database, guid_list, agent_references, integrity_error):
             conflicts += [agent]
     return agent_list, conflicts
 
-# Creates command line arguments, reads GUID data from csv file, coordinates function calling
 def main():
+    # Creates command line arguments, reads GUID data from csv file, coordinates function calling
     parser = argparse.ArgumentParser()
     parser.add_argument("-u", "--username", action="store", dest="username",
                         help="MySQL username", required=True)

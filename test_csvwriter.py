@@ -1,11 +1,13 @@
-""" Tests the csvwriter module across 4 cases."""
+"""
+4 different test methods for the script csvwriter.
+"""
 import  os
 import csv
 import unittest
 import csvwriter
 
 class WriteReport(unittest.TestCase):
-    """Tests the write_report function form the csvwriter.py module."""
+    # Tests the write_report function from the csvwriter.py module
 
     def test_file_exists(self):
         # Confirms that a csv file with the file name does not already exist in directory

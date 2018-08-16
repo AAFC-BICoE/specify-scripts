@@ -1,4 +1,6 @@
-# Tests the RemoveLinksToAttachments across 4 cases. Creates and deletes test database.
+"""
+4 different test methods for the RemoveLinksToAttachments.py script.
+"""
 import os
 import sqlite3
 import unittest
@@ -50,14 +52,14 @@ class TestDatabase(unittest.TestCase):
         os.remove("specifytest.db")
 
     def test_select_attachments(self):
-        # Tests to confirm AttachmentID's that are a image/jpeg MimeType are returned
+        # Confirms AttachmentID's that are a image/jpeg MimeType are returned
         conn = sqlite3.connect("specifytest.db")
         actual = RemoveLinksToAttachments.select_attachments(conn)
         expected = [("1", ), ("4", ), ("3", )]
         self.assertEqual(expected, actual)
 
     def test_delete_attachments_attachment_table(self):
-        # Tests to confirm that AttachmentID's are deleted
+        # Confirms that AttachmentID's are deleted with no conflicts
         exception = sqlite3.IntegrityError
         conn = sqlite3.connect("specifytest.db")
         cursor = conn.cursor()
@@ -70,7 +72,7 @@ class TestDatabase(unittest.TestCase):
         self.assertFalse(actual)
 
     def test_delete_attachments_no_conflicts(self):
-        # Tests to confirm an empty list is returned when no conflicts occur
+        # Confirms an empty list is returned when no conflicts occur
         exception = sqlite3.IntegrityError
         conn = sqlite3.connect("specifytest.db")
         test_referenced_tables = [("testdata1",), ("testdata2",), ("collectionobjectattachment",)]
@@ -81,7 +83,7 @@ class TestDatabase(unittest.TestCase):
         self.assertEqual(expected, actual)
 
     def test_delete_attachments_conflicts(self):
-        # Tests to confirm correct values are returned when conflicts occur
+        # Confirms when conflicts occur, the correct conflict list is returned
         exception = sqlite3.IntegrityError
         conn = sqlite3.connect("specifytest.db")
         cursor = conn.cursor()

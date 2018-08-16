@@ -1,29 +1,31 @@
-# Deletes localities that are not attached to any collection object by selecting 'orphan'
-# LocalityID's, updating any references of the ID in the schema to NULL then deleting the locality.
-# Defaults to saving a file of the ID's to be deleted unless prompted by --delete argument.
+"""
+Deletes localities that are not attached to any collection object by selecting the "orphan
+LocalityID's", updating any references of the ID in the schema to NULL, then deleting the locality.
+Defaults to saving a file of the ID's to be deleted unless prompted by the --delete argument.
+"""
 import argparse
 import datetime
 import pymysql
 from csvwriter import write_report
 
-# Selects all tables where the localityID is referenced as a foreign key
 def foreign_keys(database):
+    # Selects all tables where the localityID is referenced as a foreign key
     database_fetch_references = database.cursor()
     database_fetch_references.execute("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE "
                                       "WHERE CONSTRAINT_SCHEMA = 'specify' "
                                       "AND REFERENCED_COLUMN_NAME = 'LocalityID'")
     return database_fetch_references.fetchall()
 
-# Selects all localityID's that are not attached to a collection object
 def orphan_ids(database):
+    # Selects all localityID's that are not attached to a collection object
     database_orphan_ids = database.cursor()
     database_orphan_ids.execute("SELECT L.LocalityID FROM locality L LEFT JOIN collectingevent C "
                                 "ON C.LocalityID = L.LocalityID WHERE C.LocalityID IS NULL")
     return database_orphan_ids.fetchall()
 
-# Sets any references of the orphan locality in the schema to NULL then deletes locality, if
-# Conflicts occur due to foreign_key restrictions, localityID is added to the conflict list
 def delete_orphans(database, orphans, referenced_tables, integrity_error):
+    # Sets any reference of orphan localities in the schema to NULL then deletes locality, if
+    # Conflicts occur due to foreign_key restrictions, LocalityID is added to the conflict list
     database_remove_reference = database.cursor()
     database_delete = database.cursor()
     conflicts = []
@@ -40,8 +42,8 @@ def delete_orphans(database, orphans, referenced_tables, integrity_error):
             continue
     return conflicts
 
-# Creates command line arguments and coordinates calls to function
 def main():
+    # Creates command line arguments and coordinates calls to functions
     parser = argparse.ArgumentParser()
     parser.add_argument("-u", "--username", action="store", dest="username",
                         help="MySQL username", required=True)

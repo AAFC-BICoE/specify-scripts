@@ -1,11 +1,13 @@
-# Tests the script ReplaceAgents across 6 cases. Creates and deletes a test database.
+"""
+6 different tests methods for the script ReplaceAgents.py.
+"""
 import unittest
 import os
 import sqlite3
 import ReplaceAgents
 
 class TestDatabase(unittest.TestCase):
-    # Tests for the script ReplaceAgents.py
+    # Testing the script ReplaceAgents.py
 
     def setUp(self):
         # Creates test database and inserts sample data
@@ -32,7 +34,7 @@ class TestDatabase(unittest.TestCase):
         os.remove("specifytest.db")
 
     def test_agent_info_positive(self):
-        # Tests to confirm that the correct data is returned when a valid GUID is passed in
+        # Confirms that the correct AgentID is returned when a valid GUID is passed in
         conn = sqlite3.connect("specifytest.db")
         cursor = conn.cursor()
         cursor.execute("PRAGMA foreign_keys = ON")
@@ -43,7 +45,7 @@ class TestDatabase(unittest.TestCase):
         self.assertListEqual(expected, actual)
 
     def test_agent_info_negative(self):
-        # Tests to confirm that an empty list is returned when an invalid GUID is passed in
+        # Confirms that an empty list is returned when an invalid GUID is passed in
         conn = sqlite3.connect("specifytest.db")
         cursor = conn.cursor()
         cursor.execute("PRAGMA foreign_keys = ON")
@@ -54,7 +56,7 @@ class TestDatabase(unittest.TestCase):
         self.assertListEqual(expected, actual)
 
     def test_update_agents_positive(self):
-        # Tests to confirm that the correct data is returned when valid GUIDs are passed in
+        # Confirms the correct list is returned when valid GUIDs are passed in with no conflicts
         conn = sqlite3.connect("specifytest.db")
         cursor = conn.cursor()
         cursor.execute("PRAGMA foreign_keys = ON")
@@ -68,7 +70,7 @@ class TestDatabase(unittest.TestCase):
         self.assertTupleEqual(expected, actual)
 
     def test_update_agents_negative_guid(self):
-        # Tests to confirm correct data is returned when invalid GUID's are passed in
+        # Confirms the correct list is returned when invalid GUIDs are passed in with conflicts
         conn = sqlite3.connect("specifytest.db")
         cursor = conn.cursor()
         cursor.execute("PRAGMA foreign_keys = ON")
@@ -82,7 +84,7 @@ class TestDatabase(unittest.TestCase):
         self.assertTupleEqual(expected, actual)
 
     def test_update_agents_negative_conflicts(self):
-        # Tests to confirm correct data is returned when valid GUID's and conflicts are passed in
+        # Confirms the correct list is returned when valid GUIDs are passed in with conflicts
         conn = sqlite3.connect("specifytest.db")
         cursor = conn.cursor()
         cursor.execute("PRAGMA foreign_keys = ON")
@@ -96,7 +98,7 @@ class TestDatabase(unittest.TestCase):
         self.assertTupleEqual(expected, actual)
 
     def test_update_agents_check(self):
-        # Tests to confirm the "Bad Agent" is deleted from the schema when valid GUID's are entered
+        # Confirms the "Bad Agent" is deleted from the schema when valid GUID's are passed in
         conn = sqlite3.connect("specifytest.db")
         cursor = conn.cursor()
         cursor.execute("PRAGMA foreign_keys = ON")

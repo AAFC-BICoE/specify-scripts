@@ -1,11 +1,13 @@
-# Tests the DeleteOrphanLocalities script across 5 cases. Creates and deletes test database.
+"""
+5 different test methods for the DeleteOrphanLocalities.py script.
+"""
 import unittest
 import os
 import sqlite3
 import DeleteOrphanLocalities
 
 class TestDatabase(unittest.TestCase):
-    # Testing the script DeleteOrphanLocalities
+    # Testing the script DeleteOrphanLocalities.py
 
     def setUp(self):
         # Creates test database and inserts sample data
@@ -44,14 +46,14 @@ class TestDatabase(unittest.TestCase):
         os.remove("specifytest.db")
 
     def test_orphan_ids(self):
-        # Tests to confirm localityID's are returned in the proper format
+        # Confirms localityID's are selected and returned in the proper format
         conn = sqlite3.connect("specifytest.db")
         actual = DeleteOrphanLocalities.orphan_ids(conn)
         expected = [("4", ), ("5", ), ("6", )]
         self.assertEqual(expected, actual)
 
     def test_check_orphans(self):
-        # Tests to confirm that LocalityID's returned are actually 'orphans'
+        # Confirms that the LocalityID's returned are actually 'orphans'
         conn = sqlite3.connect("specifytest.db")
         cursor = conn.cursor()
         cursor.execute("SELECT * FROM collectingevent WHERE LocalityID IN ('4','5','6')")
@@ -60,7 +62,7 @@ class TestDatabase(unittest.TestCase):
         self.assertEqual(expected, actual)
 
     def test_delete_orphans_no_conflicts(self):
-        # Tests to confirm delete_orphans function returns an empty list when no conflicts occur
+        # Confirms the delete_orphans function returns an empty list when no conflicts occur
         conn = sqlite3.connect("specifytest.db")
         cursor = conn.cursor()
         cursor.execute("PRAGMA foreign_keys = ON")
@@ -74,7 +76,7 @@ class TestDatabase(unittest.TestCase):
         self.assertEqual(expected, actual)
 
     def test_delete_orphans_check(self):
-        # Tests to confirm when no conflicts occur, records are deleted
+        # Confirms records are deleted when no conflicts occur
         conn = sqlite3.connect("specifytest.db")
         cursor = conn.cursor()
         cursor.execute("PRAGMA foreign_keys = ON")
@@ -90,7 +92,7 @@ class TestDatabase(unittest.TestCase):
         self.assertEqual(expected, actual)
 
     def test_delete_orphans_conflicts(self):
-        # Tests to confirm when conflicts occur, correct conflict list is returned
+        # Confirms correct conflict list is returned when conflicts occur
         conn = sqlite3.connect("specifytest.db")
         cursor = conn.cursor()
         cursor.execute("PRAGMA foreign_keys = ON")
