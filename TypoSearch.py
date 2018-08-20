@@ -115,7 +115,7 @@ def main():
     parser.add_argument("-typo_limit", action = "store", dest = "typo",
                         help= "Maximum number of character DIFFERENCES between two names to be considered a typo, "
                               "EX: 'foo' and 'foos!' have a character difference of 2 (INTEGER)", required= True)
-    parser.add_argument("--show", action="store_true", dest="show", help="Print Locality ID's to be deleted to screen")
+    parser.add_argument("--show", action="store_true", dest="show", help="Displays duplicates found to screen")
     parser.add_argument("--locality", action="store_true", dest="locality", help="Search locality table names")
     args = parser.parse_args()
     show = args.show
