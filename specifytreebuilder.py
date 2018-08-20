@@ -16,7 +16,7 @@ def rank_dict(db,db_columns,db_table,db_ranks):
     rank_records_dict = {}
     db_record_info = db.cursor()
     for iD in db_ranks:
-        db_record_info.execute("SELECT %s FROM %s WHERE RankID = %s" %(db_columns,db_table,iD[0]))
+        db_record_info.execute("SELECT %s FROM %s WHERE RankID = '%s' " %(db_columns,db_table,iD[0]))
         rank_records_dict[iD[0]] = db_record_info.fetchall()
     return rank_records_dict
 
@@ -44,10 +44,29 @@ def add_to_dict(dictionary,key,value):
 def check_author(dictionary, name, author, tid):
     if author is None:
         return add_to_dict(dictionary, (name, author), (tid, author))
-    elif (author[0] != '(') and (author != '['):
+    elif (author[0] != '(') and (author[0] != '['):
         return add_to_dict(dictionary, (name, author[0]), (tid, author))
     return add_to_dict(dictionary, (name, author[1]), (tid, author))
 
+def build_tree_without_nums(rank_records_dict,author_toggle):
+    tree = {}
+    root = Node("root")
+    for r in rank_records_dict:
+        for record in rank_records_dict[r]:
+            if (any(str.isdigit(c) for c in record[1])) is False:
+                if author_toggle:
+                    if record[0] not in tree:
+                        add_node_with_author(record[1], record[2], record[0], record[3], root, tree)
+                    else:
+                        b = tree[record[0]][2]
+                        add_node_with_author(record[1], record[2], record[0], record[3], b, tree)
+                else:
+                    if record[0] not in tree:
+                        add_node_without_author(record[1], record[2], record[0], root, tree)
+                    else:
+                        b = tree[record[0]][2]
+                        add_node_without_author(record[1], record[2], record[0], b,tree)
+    return tree
 
 # builds tree by searching for relationships between existing childID's and new parentID's within the tree without any
 # restrictions on numbers in names
@@ -69,27 +88,3 @@ def build_tree_with_nums(rank_records_dict,author_toggle):
                     b = tree[record[0]][2]
                     add_node_without_author(record[1], record[2], record[0], b, tree)
     return tree
-
-# builds tree by searching for relationships between existing childID's and new parentID's within the tree without
-# numbers in names
-def build_tree_without_nums(rank_records_dict,author_toggle):
-    tree = {}
-    root = Node("root")
-    for r in rank_records_dict:
-        for record in rank_records_dict[r]:
-            if (any(str.isdigit(c) for c in record[1])) is False:
-                if author_toggle:
-                    if record[0] not in tree:
-                        add_node_with_author(record[1], record[2], record[0], record[3], root, tree)
-                    else:
-                        b = tree[record[0]][2]
-                        add_node_with_author(record[1], record[2], record[0], record[3], b, tree)
-                else:
-                    if record[0] not in tree:
-                        add_node_without_author(record[1], record[2], record[0], root, tree)
-                    else:
-                        b = tree[record[0]][2]
-                        add_node_without_author(record[1], record[2], record[0], b,tree)
-    return tree
-
-
