@@ -111,10 +111,10 @@ def main():
     parser.add_argument("-d", "--database", action="store", dest="database", help="Name of MySQL specify database",
                         required=True)
     parser.add_argument("-table", action="store", dest="table", help="Name of table to search in", required=True)
-    parser.add_argument("-rank", action="store", dest="rank", help="Rank level to start searching at", required=True)
-    parser.add_argument("-typo", action = "store", dest = "typo",
+    parser.add_argument("-rank", action="store", dest="rank", help="Rank level to start searching in (INTEGER)", required=True)
+    parser.add_argument("-typo_limit", action = "store", dest = "typo",
                         help= "Maximum number of character DIFFERENCES between two names to be considered a typo, "
-                              "EX: 'foo' and 'foos!' have a character difference of 2", required= True)
+                              "EX: 'foo' and 'foos!' have a character difference of 2 (INTEGER)", required= True)
     parser.add_argument("--show", action="store_true", dest="show", help="Print Locality ID's to be deleted to screen")
     parser.add_argument("--locality", action="store_true", dest="locality", help="Search locality table names")
     args = parser.parse_args()
