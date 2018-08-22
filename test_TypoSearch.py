@@ -1,155 +1,123 @@
-# Tests the TypoSearch script for 13 cases. Script only tests the TypoSearch functions that do not correspond to any
-# Tree iteration to avoid type conversion conflicts
-import TypoSearch, os, unittest, datetime
+"""
+13 test methods for the TypoSearch.py script.
+"""
+import os
+import unittest
+import datetime
+import TypoSearch
 
 class TestTypoSearch(unittest.TestCase):
+    # Tests the TypoSearch.py script. Script only tests the methods that do not correspond to tree
+    # Iteration to avoid type conversion conflicts.
 
     def test_check_author_positive(self):
-        # Tests to confirm the function check_author returns the correct LD when valid parameters are passed in
-        test_author_letter_1 = "C"
-        test_name1 = "test"
-        test_author_letter_2 = "C"
-        test_name2 = "test1"
-        actual = TypoSearch.check_author(test_author_letter_1,test_name1,test_author_letter_2,test_name2)
+        # Confirms the correct distance value is returned when valid parameters are passed in
+        actual = TypoSearch.check_author("C", "test", "C", "test1")
         expected = 1
-        self.assertEqual(expected,actual)
+        self.assertEqual(expected, actual)
 
     def test_check_author_negative(self):
-        # Tests to confirm the function check_author returns False when invalid parameters are passed in
-        test_author_letter_1 = "C"
-        test_name1 = "test"
-        test_author_letter_2 = "D"
-        test_name2 = "test1"
-        actual = TypoSearch.check_author(test_author_letter_1,test_name1,test_author_letter_2,test_name2)
+        # Confirms False is returned when invalid parameters are passed in
+        actual = TypoSearch.check_author("C", "test", "D", "test1")
         self.assertFalse(actual)
 
     def test_find_taxon_typos_name1_brackets_positive(self):
-        # Tests to confirm when taxon name1's author first letter begins with brackets and the rest of the node meets
-        # The requirements to be flagged as a possible typo, the correct list is returned
-        test_name1 = ("testname",123,"(testAuthor)")
+        # Confirms the expected list is returned when name1's author begins with a bracket
+        test_name1 = ("testname", 123, "(testAuthor)")
         test_name2 = ("testname3", 456, "test")
-        test_result_data = []
-        test_data = ["","taxonname"]
-        test_typo = 2
-        actual = TypoSearch.find_taxon_typos(test_name1, test_name2, test_result_data, test_data, test_typo)
-        expected = [("taxonname","testname","testname3","(testAuthor)","test",123,456,1)]
-        self.assertListEqual(expected,actual)
+        test_data = ["", "taxonname"]
+        actual = TypoSearch.find_taxon_typos(test_name1, test_name2, [], test_data, 2)
+        expected = [("taxonname", "testname", "testname3", "(testAuthor)", "test", 123, 456, 1)]
+        self.assertListEqual(expected, actual)
 
     def test_find_taxon_typos_name1_brackets_negative(self):
-        # Tests to confirm when taxon name1's author first letter begins with brackets and the rest of the node does not
-        # Meet the requirements to be flagged as a possible typo, an empty list is returned
+        # Confirms an empty list is returned when name1's author begins with brackets and the names
+        # Do not meet the requirement to be flagged as a possible typo
         test_name1 = ("testname", 123, "[bestAuthor]")
         test_name2 = ("testname3", 456, "test")
-        test_result_data = []
         test_data = ["", "taxonname"]
-        test_typo = 2
-        actual = TypoSearch.find_taxon_typos(test_name1, test_name2, test_result_data, test_data, test_typo)
-        expected = []
-        self.assertListEqual(expected, actual)
+        actual = TypoSearch.find_taxon_typos(test_name1, test_name2, [], test_data, 2)
+        self.assertFalse(actual)
 
     def test_find_taxon_typos_name2_brackets_positive(self):
-        # Tests to confirm when taxon name2's author first letter begins with brackets and the rest of the node meets
-        # The requirements to be flagged as a possible typo, the correct list is returned
-        test_name1 = ("testname",123,"testAuthor")
+        # Confirms the expected list is returned when name2's author begins with brackets and the
+        # Names meet the requirements to be flagged as a possible typo
+        test_name1 = ("testname", 123, "testAuthor")
         test_name2 = ("testname3", 456, "[test]")
-        test_result_data = []
-        test_data = ["","taxonname"]
-        test_typo = 2
-        actual = TypoSearch.find_taxon_typos(test_name1,test_name2,test_result_data,test_data, test_typo)
-        expected = [("taxonname","testname","testname3","testAuthor","[test]",123,456,1)]
-        self.assertListEqual(expected,actual)
-
-    def test_find_taxon_typos_name2_brackets_negative(self):
-        # Tests to confirm when taxon name2's author first letter begins with brackets and the rest of the node does not
-        # Meet the requirements to be flagged as a possible typo, an empty list is returned
-        test_name1 = ("testname", 123, "bestAuthor")
-        test_name2 = ("testname3", 456, "(test)")
-        test_result_data = []
         test_data = ["", "taxonname"]
-        test_typo = 2
-        actual = TypoSearch.find_taxon_typos(test_name1, test_name2, test_result_data, test_data, test_typo)
-        expected = []
+        actual = TypoSearch.find_taxon_typos(test_name1, test_name2, [], test_data, 2)
+        expected = [("taxonname", "testname", "testname3", "testAuthor", "[test]", 123, 456, 1)]
         self.assertListEqual(expected, actual)
 
+    def test_find_taxon_typos_name2_brackets_negative(self):
+        # Confirms an empty list is returned when name2's author begins with brackets and the names
+        # Do not meet the requirements to be flagged as a possible typo
+        test_name1 = ("testname", 123, "bestAuthor")
+        test_name2 = ("testname3", 456, "(test)")
+        test_data = ["", "taxonname"]
+        actual = TypoSearch.find_taxon_typos(test_name1, test_name2, [], test_data, 2)
+        self.assertFalse(actual)
+        
     def test_find_taxon_typos_name1_name2_positive(self):
-        # Tests to confirm when taxon name1 and name2 have author first letters beginning with letters and the rest of
-        # The node meets the requirements to be flagged as a possible typo, the correct list is returned
+        # Confirms the correct list is returned when names are flagged as a possible typo
         test_name1 = ("testname", 123, "testAuthor")
         test_name2 = ("testname3", 456, "test")
-        test_result_data = []
         test_data = ["", "taxonname"]
-        test_typo = 2
-        actual = TypoSearch.find_taxon_typos(test_name1, test_name2, test_result_data, test_data, test_typo)
+        actual = TypoSearch.find_taxon_typos(test_name1, test_name2, [], test_data, 2)
         expected = [("taxonname", "testname", "testname3", "testAuthor", "test", 123, 456, 1)]
         self.assertListEqual(expected, actual)
 
     def test_find_taxon_typos_name1_name2_negative(self):
-        # Tests to confirm when taxon name1 and name2 have author first letters beginning with different letters and the
-        # Rest of the node meets the requirements to be flagged as a possible typo, an empty list is returned
+        # Confirms an empty list is returned when the authors begin with different letters
         test_name1 = ("testname", 123, "bestAuthor")
         test_name2 = ("testname3", 456, "test")
-        test_result_data = []
         test_data = ["", "taxonname"]
-        test_typo = 2
-        actual = TypoSearch.find_taxon_typos(test_name1, test_name2, test_result_data, test_data, test_typo)
-        expected = []
-        self.assertListEqual(expected, actual)
+        actual = TypoSearch.find_taxon_typos(test_name1, test_name2, [], test_data, 2)
+        self.assertFalse(actual)
 
     def test_find_taxon_typos_authors_positive(self):
-        # Tests to confirm when taxon name1 and name2 have the author field as None and the rest of the node meets the
-        # Requirements to be flagged as a possible typo, the correct list is returned
+        # Confirms the correct list is returned when the author is None for both names and names
+        # Have a LD of <= 2
         test_name1 = ("testname", 123, None)
         test_name2 = ("testname3", 456, None)
-        test_result_data = []
         test_data = ["", "taxonname"]
-        test_typo = 2
-        actual = TypoSearch.find_taxon_typos(test_name1, test_name2, test_result_data, test_data, test_typo)
-        expected = [("taxonname","testname","testname3", None, None, 123, 456, 1)]
+        actual = TypoSearch.find_taxon_typos(test_name1, test_name2, [], test_data, 2)
+        expected = [("taxonname", "testname", "testname3", None, None, 123, 456, 1)]
         self.assertListEqual(expected, actual)
 
     def test_find_taxon_typos_names_negative(self):
-        # Tests to confirm that when taxon name1 and name2 have the author field as Node and name1 and name2 have names
-        # With a LD greater than 2, an empty list is returned
+        # Confirms an empty list is returned when the author is None for both names and LD is > 2
         test_name1 = ("cat", 123, None)
         test_name2 = ("horse", 456, None)
-        test_result_data = []
         test_data = ["", "taxonname"]
-        test_typo = 2
-        actual = TypoSearch.find_taxon_typos(test_name1, test_name2, test_result_data, test_data, test_typo)
-        expected = []
-        self.assertListEqual(expected, actual)
+        actual = TypoSearch.find_taxon_typos(test_name1, test_name2, [], test_data, 2)
+        self.assertFalse(actual)
 
     def test_find_geography_typos_positive(self):
-        # Tests to confirm that the correct list is returned when geography names that have a LD of <=2 are passed in
-        test_name_list = [(("test",123),("test1",456))]
-        test_result_data = []
-        test_data = ("","geographyname")
-        test_typo = 2
-        actual = TypoSearch.find_geography_typos(test_name_list,test_result_data,test_data,test_typo)
-        expected = [("geographyname","test","test1",123,456,1)]
-        self.assertListEqual(expected,actual)
+        # Confirms the correct list is returned for names that have a LD <= 2
+        test_name_list = [(("test", 123), ("test1", 456))]
+        test_data = ("", "geographyname")
+        actual = TypoSearch.find_geography_typos(test_name_list, [], test_data, 2)
+        expected = [("geographyname", "test", "test1", 123, 456, 1)]
+        self.assertListEqual(expected, actual)
 
     def test_find_geography_typos_negative(self):
-        # Tests to confirm that an empty list is returned when geography names that have a LD not <=2 are passed in
-        test_name_list = [(("cat",123),("horse",456))]
-        test_result_data = []
-        test_data = ("","geographyname")
-        test_typo = 2
-        actual = TypoSearch.find_geography_typos(test_name_list,test_result_data,test_data, test_typo)
-        expected = []
-        self.assertListEqual(expected,actual)
+        # Confirms an empty list is returned for names that have a LD > 2
+        test_name_list = [(("cat", 123), ("horse", 456))]
+        test_data = ("", "geographyname")
+        actual = TypoSearch.find_geography_typos(test_name_list, [], test_data, 2)
+        self.assertFalse(actual)
 
     def test_report_exists(self):
-        # Tests to confirm that when the report writing function is called, a report is actually created
+        # Confirms a report is create/exists when the report method is called
         test_file_name = "TypoReport[%s]" % (datetime.date.today())
         test_headings = ["test"]
-        test_result_data = ["data1","data2"]
-        test_show = False
-        TypoSearch.report(test_headings,test_result_data,test_show)
+        test_result_data = ["data1", "data2"]
+        TypoSearch.report(test_headings, test_result_data, False)
         test_file_path = str(os.getcwd() + "/" + test_file_name + ".csv")
         actual = os.path.exists(test_file_path)
-        self.assertTrue(actual)
         os.remove(test_file_path)
+        self.assertTrue(actual)
 
 if __name__ == "__main__":
     unittest.main()

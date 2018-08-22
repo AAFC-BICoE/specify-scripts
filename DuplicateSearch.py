@@ -1,23 +1,25 @@
 """
-Using command line arguments, builds a tree from a table (geography or taxon) and searches for duplicate names within
-a passed in rank. A report of the duplicates is saved in a csv file with a time stamped name. If searching in the
-taxon tree, only matching names with matching author first letters are flagged. If the optional argument 'locality' is
-specified then a case insensitive search of locality names is preformed via geographyID. Note, rankID refers to the
-level of subtree that will be searched within, ie if in the geography table, rankid=200 is the country subtree, tree
-will be searched for duplicates within the same country. Searches performed in the taxon tree are case sensitive, and
-searches performed in the geography tree are case insensitive
+Builds tree from geography or taxon table and searches for duplicate names within a specified
+subtree. A report of the duplicates is created. If searching by taxon, only duplicate names that
+have te same author first letters are flagged. If the optional argument 'locality' is specified
+then a search of locality names is performed via joining the geographyID.
+NOTE: RankID refers to the level of subtree that will be searched within. Searches performed in
+the taxon tree are case sensitive,searches performed in the geography tree are case insensitive.
 """
-import pymysql, argparse, datetime, itertools
+import argparse
+import datetime
+import pymysql
 from anytree import PreOrderIter
 from csvwriter import write_report
-from specifytreebuilder import rank_dict, build_tree_with_nums, build_tree_without_nums,fetch_ranks, check_author
+from specifytreebuilder import rank_dict, build_tree_with_nums, \
+    build_tree_without_nums, fetch_ranks, check_author
 
-# searches and updates the node dictionary if duplicates are found, searches by locality if specified
-# case INSENSITIVE
-def find_geography_duplicates(db,locality_toggle,node_dict, name):
-    db_locality_info = db.cursor()
+def find_geography_duplicates(database, locality_toggle, node_dict, name):
+    # Searches and updates geography/locality dictionary if duplicates are found
+    db_locality_info = database.cursor()
     if locality_toggle:
-        db_locality_info.execute("SELECT LocalityName,LocalityID FROM locality WHERE GeographyID = '%s'" % name[1])
+        db_locality_info.execute("SELECT LocalityName, LocalityID FROM locality "
+                                 "WHERE GeographyID = '%s'" % name[1])
         for locality in  db_locality_info.fetchall():
             if locality[0].lower() in node_dict:
                 node_dict[locality[0].lower()].append(locality[1])
@@ -30,30 +32,29 @@ def find_geography_duplicates(db,locality_toggle,node_dict, name):
         node_dict[name[0].lower()] = [name[1]]
     return node_dict
 
-# searches and updates the level dictionary if duplicates with the same name and author first letter are found
-# case SENSITIVE
 def find_taxon_duplicates(name, level_dict):
+    # Searches and updates taxon dictionary if duplicates are found
     if (name[2] is None) or (name[2] == ""):
         level_dict = check_author(level_dict, name[0], None, name[1])
     else:
         level_dict = check_author(level_dict, name[0], name[2], name[1])
     return level_dict
 
-# searches each rank 'subtree' in the geography table/locality table (if specified), creates dict, returns duplicates
-def search_tree_geography(db,rank_records_dict,tree, rank,locality_toggle):
+def search_tree_geography(database, rank_records_dict, tree, rank, locality_toggle):
+    # Searches each 'subtree' in the geography/locality tree, returns duplicate data list
     rank_level = rank_records_dict[rank]
     data = []
     for nodelvl in rank_level:
         node_dict = {}
         for name in [node.name for node in PreOrderIter((tree[nodelvl[2]][2]))]:
-            node_dict = find_geography_duplicates(db, locality_toggle,node_dict,name)
+            node_dict = find_geography_duplicates(database, locality_toggle, node_dict, name)
         for key in node_dict:
             if len(node_dict[key]) > 1:
                 data.append((nodelvl[1], key, str(node_dict[key])))
     return data
 
-# searches each rank 'subtree', returns formatted duplicate data list
-def search_tree_taxon(rank_records_dict,tree, rank):
+def search_tree_taxon(rank_records_dict, tree, rank):
+    # Searches each 'subtree' in the taxon tree, returns duplicate data list
     data = []
     rank_level = rank_records_dict[rank]
     for level in rank_level:
@@ -62,11 +63,13 @@ def search_tree_taxon(rank_records_dict,tree, rank):
             level_dict = find_taxon_duplicates(name, level_dict)
         for key in level_dict:
             if len(level_dict[key]) > 1:
-                data.append(((level[1]),key[0],str([i[1] for i in level_dict[key]]),str([j[0] for j in level_dict[key]])))
+                data.append(((level[1]), key[0],
+                             str([i[1] for i in level_dict[key]]),
+                             str([j[0] for j in level_dict[key]])))
     return data
 
-# writes report with timestamp
-def report(headings,result_data,show):
+def report(headings, result_data, show):
+    # Writes report, prints data to screen if specified
     file_name = "DuplicateReport[%s]" % (datetime.date.today())
     write_report(file_name, headings, result_data)
     if show:
@@ -74,64 +77,65 @@ def report(headings,result_data,show):
             print(row)
     print("Report saved as %s.csv" % file_name)
 
-# builds tree for taxon table and coordinates report writing
-def taxon(db,table,rank_ids,rank,show):
+def taxon(database, table, rank_ids, rank, show):
+    # Builds taxon tree, coordinates report writing
     columns = "ParentID, FullName, TaxonID, Author"
-    rank_dictionary = rank_dict(db, columns, table, rank_ids)
+    rank_dictionary = rank_dict(database, columns, table, rank_ids)
     tree = build_tree_without_nums(rank_dictionary, True)
     try:
         result_data = search_tree_taxon(rank_dictionary, tree, rank)
     except KeyError:
         return print("Invalid rank")
-    headings = ["Rank Name", "Duplicate Full Name", "Authors", "TaxonIDs"]
-    report(headings,result_data,show)
+    return report(["Rank Name", "Duplicate Full Name", "Authors", "TaxonIDs"], result_data, show)
 
-# builds tree for geography table, toggles the locality search and coordinates report writing
-def geography(db,table,rank_ids,rank,show,toggle):
+def geography(database, table, rank_ids, rank, show, toggle):
+    # Builds geography tree, toggles locality join, coordinates report writing
     columns = "ParentID, FullName, GeographyID"
-    rank_dictionary = rank_dict(db, columns, table, rank_ids)
-    tree = build_tree_with_nums(rank_dictionary,False)
+    rank_dictionary = rank_dict(database, columns, table, rank_ids)
+    tree = build_tree_with_nums(rank_dictionary, False)
     try:
-        result_data = search_tree_geography(db,rank_dictionary,tree,rank,toggle)
+        result_data = search_tree_geography(database, rank_dictionary, tree, rank, toggle)
     except KeyError:
         return print("Invalid rank")
-    headings = ["Country Name", "Duplicate Geography Full Name", "Geography IDs"]
-    report(headings, result_data, show)
+    return report(["Country Name", "Duplicate Full Name", "Geography IDs"], result_data, show)
 
-# creates arguments, connects to database and coordinates tree searches
 def main():
+    # Creates arguments, connects to database, coordinates function calls
     parser = argparse.ArgumentParser()
-    parser.add_argument("-u", "--username", action="store", dest="username", help="MySQL username", required=True)
-    parser.add_argument("-p", "--password", action="store", dest="password", help="MySQL password", required=True)
-    parser.add_argument("-d", "--database", action="store", dest="database", help="Name of MySQL specify database",
-                        required=True)
-    parser.add_argument("-table", action= "store", dest="table", help="Name of table to search in", required=True)
-    parser.add_argument("-rank", action= "store", dest= "rank", help="Rank level to start searching at", required=True)
-    parser.add_argument("--show", action="store_true", dest="show", help="Print Locality ID's to be deleted to screen")
-    parser.add_argument("--locality", action="store_true", dest= "locality", help= "Search on locality")
+    parser.add_argument("-u", "--username", action="store", dest="username",
+                        help="MySQL username", required=True)
+    parser.add_argument("-p", "--password", action="store", dest="password",
+                        help="MySQL password", required=True)
+    parser.add_argument("-d", "--database", action="store", dest="database",
+                        help="Name of MySQL specify database", required=True)
+    parser.add_argument("-table", action="store", dest="table",
+                        help="Name of table to search in", required=True)
+    parser.add_argument("-rank", action="store", dest="rank",
+                        help="Rank level to start searching at", required=True)
+    parser.add_argument("--show", action="store_true", dest="show",
+                        help="Print Locality ID's to be deleted to screen")
+    parser.add_argument("--locality", action="store_true", dest="locality",
+                        help="Search on locality")
     args = parser.parse_args()
-    username = args.username
-    password = args.password
-    database = args.database
     show = args.show
     table = args.table
     locality = args.locality
     rank = int(args.rank)
     try:
-        db = pymysql.connect("localhost", username, password, database)
+        database = pymysql.connect("localhost", args.username, args.password, args.database)
     except pymysql.err.OperationalError:
         return print('Error connecting to database, try again')
     try:
-        rank_ids = fetch_ranks(db,table)
+        rank_ids = fetch_ranks(database, table)
     except pymysql.err.ProgrammingError:
         return print("%s is not a table in the schema" % table)
     if table == "taxon":
-         return taxon(db,table,rank_ids,rank,show)
-    elif table == "geography":
+        return taxon(database, table, rank_ids, rank, show)
+    if table == "geography":
         if locality:
-            return geography(db,table,rank_ids,rank,show,True)
-        return geography(db,table,rank_ids,rank,show,False)
-    print("Table %s not supported"% table)
+            return geography(database, table, rank_ids, rank, show, True)
+        return geography(database, table, rank_ids, rank, show, False)
+    return print("Table %s not supported" % table)
 
-if __name__== "__main__":
+if __name__ == "__main__":
     main()
