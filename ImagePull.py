@@ -25,9 +25,10 @@ def copy_files(image_paths, destination):
     return new_dir
 
 def source_search(source):
-    # Returns a list of each .JPG file path in the source directory
+    # Returns a list of each image file path in the source directory
+    ext = (".JPG", ".jpg", ".JPEG", ".jpeg")
     return [os.path.join(path, f) for path, sub, files
-            in os.walk(source) for f in files if f.endswith(".JPG")]
+            in os.walk(source) for f in files if f.endswith(tuple(ext))]
 
 def md_search(image_paths, metadata, keyword):
     # Searches by keyword and metadata field entered, returns list of image paths if any found
@@ -56,7 +57,7 @@ def csv_report(file_name, headings, data, show):
     # Creates report with passed in data, displays images to screen if specified
     if show:
         for image_name in data:
-            print(str(image_name[0]) + ".JPG")
+            print(image_name[0])
     write_report(file_name, headings, data)
 
 def main():
