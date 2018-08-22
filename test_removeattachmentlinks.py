@@ -1,13 +1,13 @@
 """
-4 different test methods for the RemoveLinksToAttachments.py script.
+4 different test methods for the removeattachmentlinks.py script.
 """
 import os
 import sqlite3
 import unittest
-import RemoveLinksToAttachments
+import removeattachmentlinks
 
 class TestDatabase(unittest.TestCase):
-    # Testing the script RemoveLinksToAttachments.py
+    # Testing the script removeattachmentlinks.py
 
     def setUp(self):
         # Creates the test database, inserts sample data into test tables
@@ -54,7 +54,7 @@ class TestDatabase(unittest.TestCase):
     def test_select_attachments(self):
         # Confirms AttachmentID's that are a image/jpeg MimeType are returned
         conn = sqlite3.connect("specifytest.db")
-        actual = RemoveLinksToAttachments.select_attachments(conn)
+        actual = removeattachmentlinks.select_attachments(conn)
         expected = [("1", ), ("4", ), ("3", )]
         self.assertEqual(expected, actual)
 
@@ -65,7 +65,7 @@ class TestDatabase(unittest.TestCase):
         cursor = conn.cursor()
         test_referenced_tables = [("testdata1",), ("testdata2",), ("collectionobjectattachment",)]
         test_attachments = [("1", ), ("2", ), ("3", )]
-        RemoveLinksToAttachments.delete_attachments(
+        removeattachmentlinks.delete_attachments(
             conn, test_referenced_tables, test_attachments, exception)
         cursor.execute("SELECT * FROM attachment WHERE AttachmentID = 1")
         actual = cursor.fetchall()
@@ -77,7 +77,7 @@ class TestDatabase(unittest.TestCase):
         conn = sqlite3.connect("specifytest.db")
         test_referenced_tables = [("testdata1",), ("testdata2",), ("collectionobjectattachment",)]
         test_attachments = [("1", ), ("2", ), ("3", )]
-        actual = RemoveLinksToAttachments.delete_attachments(
+        actual = removeattachmentlinks.delete_attachments(
             conn, test_referenced_tables, test_attachments, exception)
         expected = []
         self.assertEqual(expected, actual)
@@ -91,7 +91,7 @@ class TestDatabase(unittest.TestCase):
         conn.commit()
         test_referenced_tables = [("testdata1", )]
         test_attachments = [("1", ), ("2", ), ("3", ), ("4", )]
-        actual = RemoveLinksToAttachments.delete_attachments(
+        actual = removeattachmentlinks.delete_attachments(
             conn, test_referenced_tables, test_attachments, exception)
         expected = ["1", "2", "3", "4"]
         self.assertEqual(expected, actual)

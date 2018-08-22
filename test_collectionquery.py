@@ -1,13 +1,13 @@
 """
-8 test methods for the MultiCollectionQuery.py script.
+8 test methods for the collectionquery.py script.
 """
 import os
 import sqlite3
 import unittest
-import MultiCollectionQuery
+import collectionquery
 
 class TestDatabase(unittest.TestCase):
-    # Testing the script MultiCollectionQuery.py
+    # Testing the script collectionquery.py
 
     def setUp(self):
         # Creates the test database and test tables, inserts sample data into test tables
@@ -56,7 +56,7 @@ class TestDatabase(unittest.TestCase):
         conn.commit()
         cursor.close()
         conn.close()
-      
+
     def tearDown(self):
         # Removes the test database
         os.remove("specifytest.db")
@@ -65,7 +65,7 @@ class TestDatabase(unittest.TestCase):
         # Confirms the function returns the expected list when multiple collectors are passed in
         test_query_data = (("catnum", "dao", "collection", "test1", "taxon", "locality", "year"),
                            ("catnum", "dao", "collection", "test2", "taxon", "locality", "year"))
-        actual = MultiCollectionQuery.format_records(test_query_data)
+        actual = collectionquery.format_records(test_query_data)
         expected = ([["catnum", "dao", "collection", "test1, test2", "taxon", "locality", "year"]]
                     , 1)
         self.assertTupleEqual(expected, actual)
@@ -74,7 +74,7 @@ class TestDatabase(unittest.TestCase):
         # Confirms the function returns the correct number of unique catalognumbers
         test_query_data = (("catnum1", "dao", "collection", "test1", "taxon", "locality", "year"),
                            ("catnum2", "dao", "collection", "test2", "taxon", "locality", "year"))
-        actual = MultiCollectionQuery.format_records(test_query_data)
+        actual = collectionquery.format_records(test_query_data)
         expected = ([["catnum1", "dao", "collection", "test1", "taxon", "locality", "year"],
                      ["catnum2", "dao", "collection", "test2", "taxon", "locality", "year"]], 2)
         self.assertEqual(expected, actual)
@@ -83,7 +83,7 @@ class TestDatabase(unittest.TestCase):
         # Confirms the expected list is returned containing the information from a restriction list
         conn = sqlite3.connect("specifytest.db")
         test_restriction_list = "CL.CollectionName LIKE 'test4'"
-        actual = MultiCollectionQuery.fetch_info(conn, test_restriction_list)
+        actual = collectionquery.fetch_info(conn, test_restriction_list)
         expected = ([["1", "test1", "test4", "test7", "test10", "test13", "2011-01-03"]], 1)
         self.assertEqual(expected, actual)
 
@@ -91,7 +91,7 @@ class TestDatabase(unittest.TestCase):
         # Confirms an empty list is returned when an invalid restriction is passed in
         conn = sqlite3.connect("specifytest.db")
         test_restriction_list = "G.FullName LIKE '1'"
-        actual = MultiCollectionQuery.fetch_info(conn, test_restriction_list)
+        actual = collectionquery.fetch_info(conn, test_restriction_list)
         expected = ([], 0)
         self.assertEqual(expected, actual)
 
@@ -99,7 +99,7 @@ class TestDatabase(unittest.TestCase):
         # Confirms the expected list is returned when multiple valid restrictions are passed in
         conn = sqlite3.connect("specifytest.db")
         test_restriction_list = "CO.CatalogNumber LIKE '1' AND A.LastName LIKE 'test7'"
-        actual = MultiCollectionQuery.fetch_info(conn, test_restriction_list)
+        actual = collectionquery.fetch_info(conn, test_restriction_list)
         expected = ([["1", "test1", "test4", "test7", "test10", "test13", "2011-01-03"]], 1)
         self.assertEqual(expected, actual)
 
@@ -107,7 +107,7 @@ class TestDatabase(unittest.TestCase):
         # Confirms an empty list is returned when multiple invalid restrictions are passed in
         conn = sqlite3.connect("specifytest.db")
         test_restriction_list = "CO.AltCatalogNumber LIKE '7' AND T.FullName LIKE 'test7'"
-        actual = MultiCollectionQuery.fetch_info(conn, test_restriction_list)
+        actual = collectionquery.fetch_info(conn, test_restriction_list)
         expected = ([], 0)
         self.assertEqual(expected, actual)
 
@@ -115,8 +115,8 @@ class TestDatabase(unittest.TestCase):
         # Confirms the expected list is returned when a valid single restriction is passed in
         test_catalognum = "test"
         test_dao, test_lastname, test_taxon, test_year, test_province = "", "", "", "", ""
-        actual = MultiCollectionQuery.format_args(test_catalognum, test_dao, test_lastname,
-                                                  test_taxon, test_year, test_province)
+        actual = collectionquery.format_args(test_catalognum, test_dao, test_lastname,
+                                             test_taxon, test_year, test_province)
         expected = "CO.CatalogNumber LIKE 'test' AND A.LastName LIKE '%%' AND G.FullName LIKE '%%' "
         self.assertEqual(expected, actual)
 
@@ -124,8 +124,8 @@ class TestDatabase(unittest.TestCase):
         # Confirms the expected list is returned when all possible restrictions are passed in
         test_catalognum, test_taxon, test_lastname, test_dao, test_year, test_province = \
             "test1", "test2", "test3", "test4", "test5", "test6"
-        actual = MultiCollectionQuery.format_args\
-            (test_catalognum, test_dao, test_lastname, test_taxon, test_year, test_province)
+        actual = collectionquery.format_args(test_catalognum, test_dao, test_lastname,
+                                             test_taxon, test_year, test_province)
         expected = "CO.CatalogNumber LIKE 'test1' AND CO.AltCatalogNumber LIKE 'test4' " \
                    "AND A.LastName LIKE '%test3%' AND T.FullName LIKE 'test2' " \
                    "AND YEAR(CE.StartDate) LIKE 'test5' AND G.FullName LIKE '%test6%' "
