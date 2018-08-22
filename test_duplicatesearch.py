@@ -1,13 +1,13 @@
 """
-8 test methods for the DuplicateSearch.py script.
+8 test methods for the duplicatesearch.py script.
 """
 import os
 import sqlite3
 import unittest
-import DuplicateSearch
+import duplicatesearch
 
 class TestDatabase(unittest.TestCase):
-    # Testing the DuplicateSearch.py script. Only tests methods that do not involve tree iteration
+    # Testing the duplicatesearch.py script. Only tests methods that do not involve tree iteration
     # To avoid type conversion conflicts.
     def setUp(self):
         # Creates the test database, inserts sample data into test table
@@ -31,7 +31,7 @@ class TestDatabase(unittest.TestCase):
         conn = sqlite3.connect("specifytest.db")
         test_node_dict = {"test": ["55"]}
         test_name = ("Test", 11)
-        actual = DuplicateSearch.find_geography_duplicates(conn, True, test_node_dict, test_name)
+        actual = duplicatesearch.find_geography_duplicates(conn, True, test_node_dict, test_name)
         expected = {"test": ["55", "1"]}
         self.assertDictEqual(expected, actual)
 
@@ -39,7 +39,7 @@ class TestDatabase(unittest.TestCase):
         # Confirms no duplicates found if searching by locality name
         conn = sqlite3.connect("specifytest.db")
         test_name = ("Test", 11)
-        actual = DuplicateSearch.find_geography_duplicates(conn, True, {}, test_name)
+        actual = duplicatesearch.find_geography_duplicates(conn, True, {}, test_name)
         expected = {"test": ["1"]}
         self.assertDictEqual(expected, actual)
 
@@ -48,7 +48,7 @@ class TestDatabase(unittest.TestCase):
         conn = sqlite3.connect("specifytest.db")
         test_node_dict = {"test": ["55"]}
         test_name = ("Test", 11)
-        actual = DuplicateSearch.find_geography_duplicates(conn, True, test_node_dict, test_name)
+        actual = duplicatesearch.find_geography_duplicates(conn, True, test_node_dict, test_name)
         expected = {"test": ["55", "1"]}
         self.assertDictEqual(expected, actual)
 
@@ -57,7 +57,7 @@ class TestDatabase(unittest.TestCase):
         conn = sqlite3.connect("specifytest.db")
         test_node_dict = {"foo": ["55"]}
         test_name = ("Test", 11)
-        actual = DuplicateSearch.find_geography_duplicates(conn, True, test_node_dict, test_name)
+        actual = duplicatesearch.find_geography_duplicates(conn, True, test_node_dict, test_name)
         expected = {"foo":["55"], "test": ["1"]}
         self.assertDictEqual(expected, actual)
 
@@ -65,7 +65,7 @@ class TestDatabase(unittest.TestCase):
         # Confirms duplicates are found when an author is not present
         test_level_dict = {("Test", None): [(55, None)]}
         test_name = ("Test", 11, None)
-        actual = DuplicateSearch.find_taxon_duplicates(test_name, test_level_dict)
+        actual = duplicatesearch.find_taxon_duplicates(test_name, test_level_dict)
         expected = {("Test", None): [(55, None), (11, None)]}
         self.assertDictEqual(expected, actual)
 
@@ -73,7 +73,7 @@ class TestDatabase(unittest.TestCase):
         # Confirms no duplicates are found when an author is not present
         test_level_dict = {("Test", None): [(55, None)]}
         test_name = ("foo", 11, "")
-        actual = DuplicateSearch.find_taxon_duplicates(test_name, test_level_dict)
+        actual = duplicatesearch.find_taxon_duplicates(test_name, test_level_dict)
         expected = {("Test", None): [(55, None)], ("foo", None): [(11, None)]}
         self.assertDictEqual(expected, actual)
 
@@ -81,7 +81,7 @@ class TestDatabase(unittest.TestCase):
         # Confirms duplicates are found if an author is present
         test_level_dict = {("Test", "f"): [(55, "foo")]}
         test_name = ("Test", 11, "fo")
-        actual = DuplicateSearch.find_taxon_duplicates(test_name, test_level_dict)
+        actual = duplicatesearch.find_taxon_duplicates(test_name, test_level_dict)
         expected = {("Test", "f"): [(55, "foo"), (11, "fo")]}
         self.assertDictEqual(expected, actual)
 
@@ -89,7 +89,7 @@ class TestDatabase(unittest.TestCase):
         # Confirms no duplicates are found if an author is present
         test_level_dict = {("Test", "f"): [(55, "foo")]}
         test_name = ("Test", 11, "bar")
-        actual = DuplicateSearch.find_taxon_duplicates(test_name, test_level_dict)
+        actual = duplicatesearch.find_taxon_duplicates(test_name, test_level_dict)
         expected = {("Test", "f"): [(55, "foo")], ("Test", "b"): [(11, "bar")]}
         self.assertDictEqual(expected, actual)
 

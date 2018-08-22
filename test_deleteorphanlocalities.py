@@ -1,13 +1,13 @@
 """
-5 different test methods for the DeleteOrphanLocalities.py script.
+5 different test methods for the deleteorphanlocalities.py script.
 """
 import unittest
 import os
 import sqlite3
-import DeleteOrphanLocalities
+import deleteorphanlocalities
 
 class TestDatabase(unittest.TestCase):
-    # Testing the script DeleteOrphanLocalities.py
+    # Testing the script deleteorphanlocalities.py
 
     def setUp(self):
         # Creates test database and inserts sample data
@@ -48,7 +48,7 @@ class TestDatabase(unittest.TestCase):
     def test_orphan_ids(self):
         # Confirms localityID's are selected and returned in the proper format
         conn = sqlite3.connect("specifytest.db")
-        actual = DeleteOrphanLocalities.orphan_ids(conn)
+        actual = deleteorphanlocalities.orphan_ids(conn)
         expected = [("4", ), ("5", ), ("6", )]
         self.assertEqual(expected, actual)
 
@@ -70,7 +70,7 @@ class TestDatabase(unittest.TestCase):
         test_orphans = [("4", ), ("5", ), ("6", )]
         test_referenced_tables = [("table1", ), ("table2", ), ("collectingevent", )]
         test_integrity_error = sqlite3.IntegrityError
-        actual = DeleteOrphanLocalities.delete_orphans(
+        actual = deleteorphanlocalities.delete_orphans(
             conn, test_orphans, test_referenced_tables, test_integrity_error)
         expected = []
         self.assertEqual(expected, actual)
@@ -84,7 +84,7 @@ class TestDatabase(unittest.TestCase):
         test_orphans = [("4", ), ("5", ), ("6", )]
         test_referenced_tables = [("table1",), ("table2",)]
         test_integrity_error = sqlite3.IntegrityError
-        DeleteOrphanLocalities.delete_orphans(
+        deleteorphanlocalities.delete_orphans(
             conn, test_orphans, test_referenced_tables, test_integrity_error)
         cursor.execute("SELECT LocalityID FROM locality WHERE LocalityID IN ('4','5','6')")
         actual = cursor.fetchall()
@@ -100,7 +100,7 @@ class TestDatabase(unittest.TestCase):
         test_orphans = [("1",), ("3",), ("2",)]
         test_referenced_tables = [("table1",)]
         test_integrity_error = sqlite3.IntegrityError
-        actual = DeleteOrphanLocalities.delete_orphans(
+        actual = deleteorphanlocalities.delete_orphans(
             conn, test_orphans, test_referenced_tables, test_integrity_error)
         expected = ["1", "3", "2"]
         self.assertEqual(expected, actual)

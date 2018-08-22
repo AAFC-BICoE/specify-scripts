@@ -1,13 +1,13 @@
 """
-6 different tests methods for the script ReplaceAgents.py.
+6 different tests methods for the script replaceagents.py.
 """
 import unittest
 import os
 import sqlite3
-import ReplaceAgents
+import replaceagents
 
 class TestDatabase(unittest.TestCase):
-    # Testing the script ReplaceAgents.py
+    # Testing the script replaceagents.py
 
     def setUp(self):
         # Creates test database and inserts sample data
@@ -40,7 +40,7 @@ class TestDatabase(unittest.TestCase):
         cursor.execute("PRAGMA foreign_keys = ON")
         conn.commit()
         test_guid = "test1"
-        actual = ReplaceAgents.agent_info(conn, test_guid)
+        actual = replaceagents.agent_info(conn, test_guid)
         expected = [("1",)]
         self.assertListEqual(expected, actual)
 
@@ -51,7 +51,7 @@ class TestDatabase(unittest.TestCase):
         cursor.execute("PRAGMA foreign_keys = ON")
         conn.commit()
         test_guid = "test7"
-        actual = ReplaceAgents.agent_info(conn, test_guid)
+        actual = replaceagents.agent_info(conn, test_guid)
         expected = []
         self.assertListEqual(expected, actual)
 
@@ -64,7 +64,7 @@ class TestDatabase(unittest.TestCase):
         test_integrity_error = sqlite3.IntegrityError
         test_guid_list = [["test1", "test2"]]
         test_agent_references = (("table1", "AgentID"),)
-        actual = ReplaceAgents.update_agents(
+        actual = replaceagents.update_agents(
             conn, test_guid_list, test_agent_references, test_integrity_error)
         expected = ([("1", "2")], [])
         self.assertTupleEqual(expected, actual)
@@ -78,7 +78,7 @@ class TestDatabase(unittest.TestCase):
         test_integrity_error = sqlite3.IntegrityError
         test_guid_list = [["test1", "test2"], ["test3", "test9"]]
         test_agent_references = (("table1", "AgentID"), )
-        actual = ReplaceAgents.update_agents(
+        actual = replaceagents.update_agents(
             conn, test_guid_list, test_agent_references, test_integrity_error)
         expected = ([("1", "2")], [["test3", "test9"]])
         self.assertTupleEqual(expected, actual)
@@ -92,7 +92,7 @@ class TestDatabase(unittest.TestCase):
         test_integrity_error = sqlite3.IntegrityError
         test_guid_list = [["test3", "test2"],]
         test_agent_references = (("table1", "AgentID"), )
-        actual = ReplaceAgents.update_agents(
+        actual = replaceagents.update_agents(
             conn, test_guid_list, test_agent_references, test_integrity_error)
         expected = ([("3", "2")], [["test3", "test2"]])
         self.assertTupleEqual(expected, actual)
@@ -106,7 +106,7 @@ class TestDatabase(unittest.TestCase):
         test_integrity_error = sqlite3.IntegrityError
         test_guid_list = [["test1", "test2"]]
         test_agent_references = (("table1", "AgentID"),)
-        ReplaceAgents.update_agents(
+        replaceagents.update_agents(
             conn, test_guid_list, test_agent_references, test_integrity_error)
         cursor.execute("SELECT * FROM agent WHERE AgentID = '1'")
         self.assertFalse(cursor.fetchall())
