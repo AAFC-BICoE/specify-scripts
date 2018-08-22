@@ -57,7 +57,7 @@ class TestTypoSearch(unittest.TestCase):
         test_data = ["", "taxonname"]
         actual = TypoSearch.find_taxon_typos(test_name1, test_name2, [], test_data, 2)
         self.assertFalse(actual)
-
+        
     def test_find_taxon_typos_name1_name2_positive(self):
         # Confirms the correct list is returned when names are flagged as a possible typo
         test_name1 = ("testname", 123, "testAuthor")

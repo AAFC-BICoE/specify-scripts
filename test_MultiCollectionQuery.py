@@ -56,7 +56,7 @@ class TestDatabase(unittest.TestCase):
         conn.commit()
         cursor.close()
         conn.close()
-
+      
     def tearDown(self):
         # Removes the test database
         os.remove("specifytest.db")
