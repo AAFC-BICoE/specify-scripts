@@ -1,13 +1,13 @@
 """
-9 different test methods for the CollectionMerge.py script.
+9 different test methods for the collectionmerge.py script.
 """
 import os
 import sqlite3
 import unittest
-import CollectionMerge
+import collectionmerge
 
 class TestDatabase(unittest.TestCase):
-    # Tests the script CollectionMerge.py
+    # Tests the script collectionmerge.py
 
     def setUp(self):
         # Creates test database, inserts sample data into test tables
@@ -50,27 +50,27 @@ class TestDatabase(unittest.TestCase):
     def test_fetch_catalog_numbers_positive(self):
         # Confirms the expected list is returned when catalog numbers are selected by collectionID
         conn = sqlite3.connect("specifytest.db")
-        actual = CollectionMerge.fetch_catalog_numbers(conn, "1")
+        actual = collectionmerge.fetch_catalog_numbers(conn, "1")
         expected = [["4"], ["7"]]
         self.assertListEqual(expected, actual)
 
     def test_fetch_catalog_numbers_negative(self):
         # Confirms an empty list is returned when an invalid collectionID is entered
         conn = sqlite3.connect("specifytest.db")
-        actual = CollectionMerge.fetch_catalog_numbers(conn, "7")
+        actual = collectionmerge.fetch_catalog_numbers(conn, "7")
         self.assertFalse(actual)
 
     def test_check_conflicts_positive(self):
         # Confirms the expected list is returned if there are catalog number conflicts
         conn = sqlite3.connect("specifytest.db")
-        actual = CollectionMerge.check_conflicts(conn, "1", "2")
+        actual = collectionmerge.check_conflicts(conn, "1", "2")
         expected = ([["4"]], [["4"], ["7"]])
         self.assertTupleEqual(expected, actual)
 
     def test_check_conflicts_negative(self):
         # Confirms the expected list is returned if there are no catalog number conflicts
         conn = sqlite3.connect("specifytest.db")
-        actual = CollectionMerge.check_conflicts(conn, "1", "3")
+        actual = collectionmerge.check_conflicts(conn, "1", "3")
         expected = ([], [["4"], ["7"]])
         self.assertTupleEqual(expected, actual)
 
@@ -80,7 +80,7 @@ class TestDatabase(unittest.TestCase):
         cursor = conn.cursor()
         cursor.execute("PRAGMA foreign_keys = ON")
         test_table_list = [("testdata1", "ID1"), ("testdata2", "ID2")]
-        CollectionMerge.switch_references(conn, test_table_list, "1", "2")
+        collectionmerge.switch_references(conn, test_table_list, "1", "2")
         cursor.execute("SELECT ID1 FROM testdata1 WHERE ID1 == '1'")
         actual = cursor.fetchall()
         self.assertFalse(actual)
@@ -90,7 +90,7 @@ class TestDatabase(unittest.TestCase):
         conn = sqlite3.connect("specifytest.db")
         cursor = conn.cursor()
         test_integrity_error = sqlite3.IntegrityError
-        CollectionMerge.delete_collection(conn, "1", test_integrity_error)
+        collectionmerge.delete_collection(conn, "1", test_integrity_error)
         cursor.execute("SELECT CollectionID FROM collection WHERE CollectionID == '1'")
         actual = cursor.fetchall()
         self.assertFalse(actual)
@@ -101,7 +101,7 @@ class TestDatabase(unittest.TestCase):
         cursor = conn.cursor()
         cursor.execute("PRAGMA foreign_keys = ON")
         test_integrity_error = sqlite3.IntegrityError
-        actual = CollectionMerge.delete_collection(conn, "4", test_integrity_error)
+        actual = collectionmerge.delete_collection(conn, "4", test_integrity_error)
         self.assertIsNone(actual)
 
     def test_delete_collection_negative(self):
@@ -110,12 +110,12 @@ class TestDatabase(unittest.TestCase):
         cursor = conn.cursor()
         cursor.execute("PRAGMA foreign_keys = ON")
         test_integrity_error = sqlite3.IntegrityError
-        actual = CollectionMerge.delete_collection(conn, "1", test_integrity_error)
+        actual = collectionmerge.delete_collection(conn, "1", test_integrity_error)
         self.assertFalse(actual)
 
     def test_csv_report_exists(self):
         # Confirms when the report writing method is called, a report is actually created
-        CollectionMerge.csv_report("test", ["test heading"], ["data"], False)
+        collectionmerge.csv_report("test", ["test heading"], ["data"], False)
         actual = os.path.exists(str(os.getcwd() + "/test.csv"))
         os.remove(str(os.getcwd() + "/test.csv"))
         self.assertTrue(actual)
