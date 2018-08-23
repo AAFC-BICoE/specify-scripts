@@ -26,7 +26,7 @@ def find_geography_duplicates(database, locality_toggle, node_dict, name):
             else:
                 node_dict[locality[0].lower()] = [locality[1]]
         return node_dict
-    if name[0] in node_dict:
+    if name[0].lower() in node_dict:
         node_dict[name[0].lower()].append(name[1])
     else:
         node_dict[name[0].lower()] = [name[1]]
