@@ -1,4 +1,4 @@
-""" 9 different test cases for the ImagePull.py script.
+""" 9 different test cases for the imagepull.py script.
 
 
 Image 01-01000489870.JPG is to be used with this script for testing with metadata ***
@@ -7,10 +7,10 @@ import unittest
 import os
 import csv
 import datetime
-import ImagePull
+import imagepull
 
 class TestImagePull(unittest.TestCase):
-    # Tests the ImagePull.py script
+    # Tests the imagepull.py script
 
     def test_copy_files_positive_directory(self):
         # Confirms a new directory is created and files are copied when no errors occur
@@ -20,7 +20,7 @@ class TestImagePull(unittest.TestCase):
         with open("text.txt", "w") as file:
             file.write("test")
         test_image_paths = [os.path.abspath("text.txt")]
-        ImagePull.copy_files(test_image_paths, test_destination)
+        imagepull.copy_files(test_image_paths, test_destination)
         actual = os.path.exists(test_new_dir + "/text.txt")
         expected = os.path.exists(test_destination % "text.txt")
         os.remove(test_new_dir + "/text.txt")
@@ -35,28 +35,28 @@ class TestImagePull(unittest.TestCase):
         test_new_dir = str(test_destination % test_folder)
         os.mkdir(test_new_dir)
         test_image_paths = os.getcwd()
-        actual = ImagePull.copy_files(test_image_paths, test_destination)
+        actual = imagepull.copy_files(test_image_paths, test_destination)
         os.rmdir(test_new_dir)
         self.assertFalse(actual)
 
     def test_source_search(self):
         # Confirms the correct image path is returned for an image found in the source path
         test_source = os.getcwd()
-        actual = ImagePull.source_search(test_source)
+        actual = imagepull.source_search(test_source)
         expected = [str(test_source + '/01-01000489870.JPG')]
         self.assertEqual(expected, actual)
 
     def test_md_search_positive(self):
         # Confirms that a metadata search with valid data returns the correct image path
         test_image_paths = [str(os.getcwd() + '/01-01000489870.JPG')]
-        actual = ImagePull.md_search(test_image_paths, "XPSubject", "Phalaris")
+        actual = imagepull.md_search(test_image_paths, "XPSubject", "Phalaris")
         expected = [str(os.getcwd() + '/01-01000489870.JPG')]
         self.assertEqual(expected, actual)
 
     def test_md_search_negative(self):
         # Confirms that a metadata search wih invalid data returns an empty list
         test_image_paths = [str(os.getcwd() + '/01-01000489870.JPG')]
-        actual = ImagePull.md_search(test_image_paths, "XPSubject", "test")
+        actual = imagepull.md_search(test_image_paths, "XPSubject", "test")
         self.assertFalse(actual)
 
     def test_csv_search_positive(self):
@@ -65,7 +65,7 @@ class TestImagePull(unittest.TestCase):
             writer = csv.writer(file)
             writer.writerow(["01-01000489870"])
         test_csv_file = str((os.getcwd() + "/%s") % "testcsv.csv")
-        actual = ImagePull.csv_search(os.getcwd(), test_csv_file)
+        actual = imagepull.csv_search(os.getcwd(), test_csv_file)
         expected = ([str(os.getcwd() + "/01-01000489870.JPG")], [])
         os.remove(test_csv_file)
         self.assertTupleEqual(expected, actual)
@@ -76,7 +76,7 @@ class TestImagePull(unittest.TestCase):
             writer = csv.writer(file)
             writer.writerow(["test"])
         test_csv_file = str((os.getcwd() + "/%s") % "testcsv.csv")
-        actual = ImagePull.csv_search(os.getcwd(), test_csv_file)
+        actual = imagepull.csv_search(os.getcwd(), test_csv_file)
         expected = ([], [["test"]])
         os.remove(test_csv_file)
         self.assertTupleEqual(expected, actual)
@@ -84,12 +84,12 @@ class TestImagePull(unittest.TestCase):
     def test_csv_search_file_not_found(self):
         # Confirms the correct handling occurs when a csv file that does not exist is input
         test_csv_file = str((os.getcwd() + "/%s") % "test.csv")
-        actual = ImagePull.csv_search(os.getcwd(), test_csv_file)
+        actual = imagepull.csv_search(os.getcwd(), test_csv_file)
         self.assertFalse(actual)
 
     def test_csv_report(self):
         # Confirms a report is created when report writing method is called
-        ImagePull.csv_report("testcsv", ["test", "headings"], ["testdata"], False)
+        imagepull.csv_report("testcsv", ["test", "headings"], ["testdata"], False)
         actual = os.path.exists(str(os.getcwd() + "/testcsv.csv"))
         os.remove(os.getcwd() + "/testcsv.csv")
         self.assertTrue(actual)
