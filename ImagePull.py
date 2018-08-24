@@ -45,7 +45,11 @@ def md_search(image_paths, metadata, keyword):
 def csv_search(source, csv_file):
     # Reads file names from .csv file and searches source file list for matches
     try:
-        csv_list = [row[0] for row in csv.reader(open(csv_file, newline=""))]
+        csv_list = []
+        with open(csv_file, newline="") as file_reader:
+            reader = csv.reader(file_reader)
+            for row in reader:
+                csv_list += row
     except FileNotFoundError:
         return print("csv file not found, check file path")
     image_paths = [path for file in csv_list for path in source_search(source) if file in path]
@@ -104,7 +108,7 @@ def main():
                          "see -h for more options")
         if csv_name:
             image_paths, not_found = csv_search(source, csv_name)
-            if not not_found:
+            if not_found:
                 file_name = str(destination % ("ImagesNotFound[%s]" % (datetime.date.today())))
                 csv_report(file_name, ["Image Names Not Found"], not_found, show)
                 print("%s image(s) not found, report saved as %s.csv"
