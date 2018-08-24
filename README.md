@@ -17,8 +17,7 @@ These instructions will allow you to run the package on your local machine for u
  
  Scripts are configured to be executed from the command line. A tutorial on how  to run python scripts from Windows, 
  MacOS and Linux terminals can be found [here](https://www.pythoncentral.io/execute-python-script-file-shell/). For 
- all scripts, a list of available commands and their functions can be found by typing the ```-h``` command while 
- executing the script.  
+ all scripts, a list of available commands and their functions can be found by typing ```-h``` while executing the script.  
  
  **PyMySQL Connector:**
  

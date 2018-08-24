@@ -6,7 +6,7 @@ setup(
     author="Brooke Clouston",
     author_email="brooke.clouston@canada.ca",
     packages=["specifycleaning", "specifycleaning.test" ],
-    url="https://github.com/AAFC-BICoE/specify-scripts/tree/master",
+    url="https://github.com/AAFC-BICoE/specify-scripts",
     license="LICENSE",
     description="A collection of scripts to be used with data from a Specify 6 database contained "
                 "in a MySQL schema for data cleaning and report creation.",
