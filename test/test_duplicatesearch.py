@@ -4,7 +4,7 @@
 import os
 import sqlite3
 import unittest
-import duplicatesearch
+from specifycleaning import duplicatesearch
 
 class TestDatabase(unittest.TestCase):
     # Testing the duplicatesearch.py script. Only tests methods that do not involve tree iteration
