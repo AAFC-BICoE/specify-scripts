@@ -1,11 +1,12 @@
 from distutils.core import setup
+import setuptools
 
 setup(
     name="specifycleaning",
     version="0.1.0",
     author="Brooke Clouston",
     author_email="brooke.clouston@canada.ca",
-    packages=["specifycleaning", "specifycleaning.test" ],
+    packages=setuptools.find_packages(),
     url="https://github.com/AAFC-BICoE/specify-scripts",
     license="LICENSE",
     description="A collection of scripts to be used with data from a Specify 6 database contained "
