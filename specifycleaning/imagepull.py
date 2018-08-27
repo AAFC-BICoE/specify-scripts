@@ -10,7 +10,7 @@ import argparse
 import datetime
 from PIL import Image
 from PIL.ExifTags import TAGS
-from csvwriter import write_report
+from specifycleaning.csvwriter import write_report
 
 def copy_files(image_paths, destination):
     # Creates a new directory and copies images into it, returns path of new directory or False

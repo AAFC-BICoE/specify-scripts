@@ -6,7 +6,7 @@ Defaults to saving a file of the ID's to be deleted unless prompted by the --del
 import argparse
 import datetime
 import pymysql
-from csvwriter import write_report
+from specifycleaning.csvwriter import write_report
 
 def foreign_keys(database):
     # Selects all tables where the localityID is referenced as a foreign key

@@ -4,7 +4,7 @@
 import unittest
 import os
 import sqlite3
-import replaceagents
+from specifycleaning import replaceagents
 
 class TestDatabase(unittest.TestCase):
     # Testing the script replaceagents.py

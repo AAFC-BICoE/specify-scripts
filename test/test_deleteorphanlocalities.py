@@ -4,7 +4,7 @@
 import unittest
 import os
 import sqlite3
-import deleteorphanlocalities
+from specifycleaning import deleteorphanlocalities
 
 class TestDatabase(unittest.TestCase):
     # Testing the script deleteorphanlocalities.py

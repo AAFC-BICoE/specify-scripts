@@ -11,8 +11,8 @@ import itertools
 import pymysql
 import Levenshtein
 from anytree import PreOrderIter
-from csvwriter import write_report
-from specifytreebuilder import rank_dict, build_tree_without_nums, fetch_ranks
+from specifycleaning.csvwriter import write_report
+from specifycleaning.specifytreebuilder import rank_dict, build_tree_without_nums, fetch_ranks
 
 def check_author(author_letter_1, name1, author_letter_2, name2):
     # If first two letters of author is the same, the distance is returned

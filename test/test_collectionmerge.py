@@ -4,7 +4,7 @@
 import os
 import sqlite3
 import unittest
-import collectionmerge
+from specifycleaning import collectionmerge
 
 class TestDatabase(unittest.TestCase):
     # Tests the script collectionmerge.py

@@ -7,7 +7,7 @@ import unittest
 import os
 import csv
 import datetime
-import imagepull
+from specifycleaning import imagepull
 
 class TestImagePull(unittest.TestCase):
     # Tests the imagepull.py script

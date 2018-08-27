@@ -5,7 +5,7 @@ import os
 import sqlite3
 import unittest
 from anytree import Node
-import specifytreebuilder
+from specifycleaning import specifytreebuilder
 
 class TestDatabase(unittest.TestCase):
     # Tests the specifytreebuilder.py module, creates and deletes a test database
