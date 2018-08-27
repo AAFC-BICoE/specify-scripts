@@ -8,7 +8,7 @@ command is executed. Deletes the empty collection with the --delete command.
 import argparse
 import datetime
 import pymysql
-from csvwriter import write_report
+from specifycleaning.csvwriter import write_report
 
 def fetch_catalog_numbers(database, collectionid):
     # Returns list of catalog numbers in collection passed in

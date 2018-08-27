@@ -4,7 +4,7 @@
 import  os
 import csv
 import unittest
-import csvwriter
+from specifycleaning import csvwriter
 
 class WriteReport(unittest.TestCase):
     # Tests the write_report function from the csvwriter.py module

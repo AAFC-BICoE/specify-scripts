@@ -4,7 +4,7 @@
 import os
 import unittest
 import datetime
-import typosearch
+from specifycleaning import typosearch
 
 class TestTypoSearch(unittest.TestCase):
     # Tests the typosearch.py script. Script only tests the methods that do not correspond to tree

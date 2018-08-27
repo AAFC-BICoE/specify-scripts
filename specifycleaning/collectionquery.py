@@ -8,7 +8,7 @@ created with this data.
 import argparse
 import datetime
 import pymysql
-from csvwriter import write_report
+from specifycleaning.csvwriter import write_report
 
 def format_records(query_data):
     # Formats records with multiple collectors, returns the number of distinct catalog numbers

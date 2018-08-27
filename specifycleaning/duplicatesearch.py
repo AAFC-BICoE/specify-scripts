@@ -10,8 +10,8 @@ import argparse
 import datetime
 import pymysql
 from anytree import PreOrderIter
-from csvwriter import write_report
-from specifytreebuilder import rank_dict, build_tree_with_nums, \
+from specifycleaning.csvwriter import write_report
+from specifycleaning.specifytreebuilder import rank_dict, build_tree_with_nums, \
     build_tree_without_nums, fetch_ranks, check_author
 
 def find_geography_duplicates(database, locality_toggle, node_dict, name):

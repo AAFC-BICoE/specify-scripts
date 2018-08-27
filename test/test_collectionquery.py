@@ -4,7 +4,7 @@
 import os
 import sqlite3
 import unittest
-import collectionquery
+from specifycleaning import collectionquery
 
 class TestDatabase(unittest.TestCase):
     # Testing the script collectionquery.py

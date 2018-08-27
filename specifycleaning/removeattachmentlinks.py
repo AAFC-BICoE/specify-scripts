@@ -7,7 +7,7 @@ to be deleted unless prompted to delete. A report of conflicts is created if any
 import argparse
 import datetime
 import pymysql
-from csvwriter import write_report
+from specifycleaning.csvwriter import write_report
 
 def select_attachments(database):
     # Selects AttachmentIDs that reference a collection object with image/jpeg MimeType

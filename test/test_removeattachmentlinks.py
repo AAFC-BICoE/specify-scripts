@@ -4,7 +4,7 @@
 import os
 import sqlite3
 import unittest
-import removeattachmentlinks
+from specifycleaning import removeattachmentlinks
 
 class TestDatabase(unittest.TestCase):
     # Testing the script removeattachmentlinks.py
